@@ -1,0 +1,1272 @@
+/* ==========================================================================
+   Coupon Crows · tokens
+   ========================================================================== */
+:root {
+  --bg: #020308;
+  --ink: #eef3ff;
+  --ink-dim: rgba(238, 243, 255, 0.74);
+  --ink-faint: rgba(238, 243, 255, 0.46);
+  --line: rgba(238, 243, 255, 0.14);
+  --panel: rgba(7, 10, 22, 0.72);
+
+  --blue: #2f7bff;
+  --blue-text: #4a8dff;
+  --pale: #8cb4ff;
+  --gold: #c9a24a;
+  --gold-hi: #e2c26e;
+
+  --f-display: 'Archivo Variable', 'Archivo', 'Arial Black', system-ui, sans-serif;
+  --f-body: 'Archivo Variable', 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Desktop sizes are rem in a 1920×940 design frame; the inline script in
+     index.html scales the root font so the layout keeps its proportions on
+     every desktop screen. Phones (under 56.25rem) have their own block below. */
+  --gutter: 7.2rem;
+  --edge: 2.5rem;
+  --rail: 7.5rem; /* room kept clear for the rail on the right */
+  --h-display: 6.75rem;
+  --h-hero: 10rem;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  background: var(--bg);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+/* Normal mode: the page itself never scrolls; nav.ts moves between screens. */
+html.is-jacked,
+html.is-jacked body,
+html.is-locked,
+html.is-locked body {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+html.is-jacked body {
+  touch-action: none;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 1rem/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+#gl {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+h1,
+h2,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 0.125rem solid var(--blue);
+  outline-offset: 0.1875rem;
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.slashes {
+  color: var(--blue);
+  letter-spacing: -0.06em;
+}
+mark {
+  background: none;
+  color: var(--blue-text);
+}
+
+/* ==========================================================================
+   Type
+   ========================================================================== */
+.display {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: var(--h-display);
+  line-height: 0.88;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow: 0 0 2.5rem rgba(2, 3, 8, 0.6);
+}
+.line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.04em;
+  margin-bottom: -0.04em;
+}
+.line__in {
+  display: block;
+}
+.eyebrow,
+.note,
+.hint,
+.hudlabel,
+.btn,
+.post footer,
+.quote figcaption {
+  font-family: var(--f-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.eyebrow {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--blue-text);
+}
+.eyebrow .slashes {
+  color: var(--ink-faint);
+}
+.lede {
+  max-width: 34ch;
+  font-size: 1.55rem;
+  line-height: 1.3;
+  font-weight: 450;
+  color: var(--ink);
+}
+.body {
+  max-width: 52ch;
+  font-size: 1.12rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.note {
+  max-width: 60ch;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  color: var(--ink-faint);
+}
+.quote {
+  display: grid;
+  gap: 0.375rem;
+  max-width: 34ch;
+}
+.quote blockquote {
+  font-size: 1.6rem;
+  line-height: 1.28;
+  font-weight: 450;
+}
+.quote figcaption {
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
+
+/* ==========================================================================
+   Buttons, pills, the contract address
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 62.4375rem;
+  background: rgba(7, 10, 22, 0.66);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.btn:hover {
+  border-color: var(--pale);
+}
+.btn--primary {
+  border-color: transparent;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 1.5rem rgba(47, 123, 255, 0.45);
+}
+.btn--primary:hover {
+  background: #4a8dff;
+}
+.btn--gold {
+  border-color: transparent;
+  background: var(--gold-hi);
+  color: #1a1305;
+  box-shadow: 0 0 1.375rem rgba(201, 162, 74, 0.32);
+}
+.btn--gold:hover {
+  background: #edd187;
+}
+.btn--ghost span[aria-hidden] {
+  color: var(--blue-text);
+}
+
+.slot {
+  display: contents;
+}
+
+/* The X (Twitter) link in the corner: a round icon button the height of the CA pill. */
+.xlink {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(7, 10, 22, 0.72);
+  color: var(--ink);
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.xlink:hover {
+  border-color: var(--pale);
+  color: #fff;
+}
+.xlink svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: currentColor;
+}
+
+.ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 62.4375rem;
+  background: rgba(7, 10, 22, 0.72);
+  font: 500 0.7rem/1 var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ca__pre {
+  color: var(--blue-text);
+}
+.ca--named .ca__pre {
+  color: var(--gold-hi);
+}
+.ca__copy {
+  color: var(--ink-faint);
+}
+.ca--named {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+}
+.ca--full {
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0 0.375rem 0 0.875rem;
+  border: 0;
+  background: none;
+  font-size: 0.78rem;
+  text-transform: none;
+}
+/* The whole address, always: on narrow screens it wraps rather than being cut off. */
+.ca--full .ca__addr {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  text-align: left;
+}
+.ca--full .ca__copy {
+  flex-shrink: 0;
+}
+.ca--full .ca__copy {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 62.4375rem;
+  text-transform: uppercase;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 6rem;
+  z-index: 60;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--blue);
+  border-radius: 62.4375rem;
+  background: rgba(2, 3, 8, 0.92);
+  font: 500 0.72rem/1 var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translate(-50%, 0.5rem);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+}
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ==========================================================================
+   Loader
+   ========================================================================== */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+.boot__center {
+  display: grid;
+  justify-items: center;
+  gap: 0.875rem;
+}
+.boot__count {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 15rem;
+  line-height: 0.82;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.boot__bar {
+  width: 10rem;
+  height: 1px;
+  background: var(--line);
+}
+.boot__bar i {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+  box-shadow: 0 0 0.625rem var(--blue);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.boot__status,
+.boot__corner {
+  font: 500 0.66rem/1.4 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.boot__status {
+  color: var(--blue-text);
+}
+.boot__corner {
+  position: absolute;
+  color: var(--ink-faint);
+}
+.boot__corner--tr {
+  top: var(--edge);
+  right: var(--edge);
+}
+.boot__corner--bl {
+  left: var(--edge);
+  bottom: var(--edge);
+}
+.boot__corner--br {
+  right: var(--edge);
+  bottom: var(--edge);
+}
+
+/* ==========================================================================
+   Entry
+   ========================================================================== */
+.entry {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 1.375rem;
+  padding-top: calc(50vh + 11.7rem);
+  pointer-events: none;
+}
+.entry[hidden] {
+  display: none;
+}
+.entry > * {
+  pointer-events: auto;
+}
+/* Enter on the emblem's centre line, the silent option under it, then the hint. */
+.entry__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.625rem;
+}
+.pill {
+  min-width: 10.5rem;
+  min-height: 3.875rem;
+  padding: 0 2.5rem;
+  border: 0;
+  border-radius: 62.4375rem;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 0 2rem rgba(47, 123, 255, 0.6),
+    0 0 5.625rem rgba(47, 123, 255, 0.25);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.pill:hover {
+  transform: scale(1.03);
+  box-shadow:
+    0 0 2.75rem rgba(47, 123, 255, 0.8),
+    0 0 7.5rem rgba(47, 123, 255, 0.35);
+}
+.textlink {
+  padding: 0.375rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink-faint);
+  background: none;
+  font: 500 0.7rem/1 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.textlink:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.entry__hint {
+  max-width: 34ch;
+  font: 500 0.64rem/1.7 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
+/* While the loader and the entry are up, the site chrome waits its turn. */
+html.is-booting #site,
+html.is-entry #site {
+  visibility: hidden;
+}
+html:not(.is-reduced) [data-after-enter] {
+  visibility: hidden;
+}
+html.is-reduced [data-after-enter],
+html:not(.is-entry):not(.is-booting) [data-after-enter] {
+  visibility: visible;
+}
+
+/* ==========================================================================
+   HUD: corner label, rail, music, contract/buy
+   ========================================================================== */
+.hudlabel {
+  position: fixed;
+  top: var(--edge);
+  right: var(--edge);
+  z-index: 20;
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  max-width: 34ch;
+  text-align: right;
+  pointer-events: none;
+}
+.hudlabel__title {
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+.hudlabel__sub {
+  font-size: 0.66rem;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+/* Side nav: twelve big ticks on the right edge. The active one shows its
+   number and name in blue; the others show their name on hover. */
+.rail {
+  position: fixed;
+  right: 0.375rem;
+  top: 50%;
+  z-index: 20;
+  display: grid;
+  transform: translateY(-50%);
+}
+.rail__tick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  height: 2.5rem;
+  padding: 0 0.75rem 0 1.5rem;
+  font: 500 0.78rem/1 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  color: var(--ink-faint);
+  text-shadow: 0 0 0.5rem var(--bg), 0 0 0.1875rem var(--bg);
+}
+.rail__tick i {
+  display: block;
+  width: 1.25rem;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.2s;
+}
+.rail__name {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateX(0.5rem);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  pointer-events: none;
+}
+.rail__tick:hover,
+.rail__tick:focus-visible {
+  color: var(--ink);
+}
+.rail__tick:hover .rail__name,
+.rail__tick:focus-visible .rail__name {
+  opacity: 1;
+  transform: none;
+}
+.rail__tick:hover i {
+  width: 1.875rem;
+}
+.rail__tick.is-active {
+  color: var(--ink);
+}
+.rail__tick.is-active i {
+  width: 2.75rem;
+  height: 0.125rem;
+  background: var(--blue);
+  box-shadow: 0 0 0.75rem var(--blue);
+}
+
+.hud {
+  position: fixed;
+  bottom: var(--edge);
+  z-index: 20;
+}
+.hud--bl {
+  left: var(--edge);
+  display: grid;
+  gap: 0.875rem;
+}
+.hud--br {
+  right: var(--edge);
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.hint {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+html.is-last .hint {
+  visibility: hidden;
+}
+
+.music {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  padding: 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  background: rgba(7, 10, 22, 0.6);
+  -webkit-backdrop-filter: blur(0.375rem);
+  backdrop-filter: blur(0.375rem);
+}
+.music__nav {
+  width: 2.125rem;
+  height: 2.125rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: none;
+  font: 500 0.66rem/1 var(--f-mono);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.music__nav:hover {
+  color: var(--ink);
+  border-color: var(--pale);
+}
+/* The obvious one: says what it will do, fills blue while the music plays. */
+.music__power {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.125rem;
+  padding: 0 0.875rem 0 0.625rem;
+  border: 1px solid var(--pale);
+  border-radius: 0.625rem;
+  background: none;
+  font: 600 0.66rem/1 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.music__power:hover {
+  border-color: var(--ink);
+}
+.music.is-on .music__power {
+  border-color: transparent;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 1.125rem rgba(47, 123, 255, 0.45);
+}
+.music__icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.music__speaker {
+  fill: currentColor;
+}
+.music__waves,
+.music.is-on .music__cross {
+  display: none;
+}
+.music.is-on .music__waves {
+  display: inline;
+}
+.music__track {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 0.25rem;
+  color: var(--ink-dim);
+}
+.eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.125rem;
+  height: 0.75rem;
+}
+.eq i {
+  width: 0.125rem;
+  height: 100%;
+  background: var(--blue-text);
+  transform-origin: bottom;
+  transform: scaleY(0.35);
+}
+.music.is-on .eq i {
+  animation: eq 0.9s ease-in-out infinite alternate;
+}
+.eq i:nth-child(2) {
+  animation-delay: -0.3s !important;
+}
+.eq i:nth-child(3) {
+  animation-delay: -0.55s !important;
+}
+.eq i:nth-child(4) {
+  animation-delay: -0.15s !important;
+}
+@keyframes eq {
+  from { transform: scaleY(0.25); }
+  to { transform: scaleY(1); }
+}
+.marquee {
+  position: relative;
+  width: 9.375rem;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.marquee__in {
+  display: flex;
+  width: max-content;
+  font: 500 0.68rem/1 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: pre;
+  animation: marquee 9s linear infinite;
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* ==========================================================================
+   Screens
+   ========================================================================== */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 6rem calc(var(--rail) + var(--edge)) 9.375rem var(--gutter);
+  pointer-events: none;
+  visibility: hidden;
+}
+html.is-jacked .screen.is-active {
+  visibility: visible;
+}
+.screen > * {
+  pointer-events: auto;
+}
+/* A soft dark wedge behind the copy keeps it readable over the particles. */
+.screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 52% 70% at 12% 55%, rgba(2, 3, 8, 0.66), transparent 70%);
+  pointer-events: none;
+}
+.screen--right {
+  justify-content: flex-end;
+}
+.screen--right::before {
+  background: radial-gradient(ellipse 52% 70% at 88% 55%, rgba(2, 3, 8, 0.66), transparent 70%);
+}
+.screen__copy {
+  display: grid;
+  justify-items: start;
+  gap: 1.125rem;
+  width: 45rem;
+}
+.screen--right .screen__copy {
+  justify-items: end;
+  text-align: right;
+}
+.screen__aside {
+  position: absolute;
+  right: calc(var(--rail) + var(--edge));
+  top: 50%;
+  width: 25rem;
+  transform: translateY(-50%);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* ---- 01 hero ---- */
+.screen--crow .screen__copy {
+  align-self: center;
+  margin-top: -5.9rem;
+  gap: 1.625rem;
+}
+.hero__title {
+  font-size: var(--h-hero);
+  line-height: 0.86;
+}
+/* ---- 02: the subhead is shouted ---- */
+.screen--name .lede {
+  max-width: 24ch;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+.screen--stage .quote,
+.screen--stage .note {
+  max-width: 40ch;
+}
+
+/* ---- post cards: a generic dark card on a made-up network ---- */
+.post {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 27.5rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, rgba(14, 20, 40, 0.84), rgba(5, 7, 16, 0.84));
+  -webkit-backdrop-filter: blur(0.5rem);
+  backdrop-filter: blur(0.5rem);
+  box-shadow: 0 1.25rem 3.75rem rgba(0, 0, 0, 0.4);
+  text-align: left;
+}
+.post header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.post__avatar {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--hue) 90% 65% / 0.7);
+  background:
+    url('/favicon.svg') center / 92% no-repeat,
+    radial-gradient(circle at 30% 30%, hsl(var(--hue) 80% 40%), hsl(var(--hue) 70% 12%));
+}
+.post__who {
+  display: grid;
+  gap: 0.125rem;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+.post__who small {
+  font: 400 0.7rem/1.2 var(--f-mono);
+  color: var(--ink-faint);
+}
+.post__net {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 62.4375rem;
+  font: 500 0.56rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+.post__text {
+  font-size: 1.02rem;
+  line-height: 1.42;
+}
+.post__quoted {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  font-size: 0.86rem;
+  line-height: 1.42;
+  color: var(--ink-dim);
+}
+.post footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.64rem;
+  color: var(--ink-faint);
+}
+
+/* ---- 11 memes ---- */
+.ringkeys {
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  font: 500 0.66rem/1.5 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.ringkeys span {
+  color: var(--blue-text);
+}
+
+/* ---- 12 join: contract box, stats ---- */
+.cabox {
+  display: grid;
+  gap: 0.375rem;
+  width: min(100%, 35rem);
+  min-width: 0;
+  padding: 0.75rem 0.75rem 0.5rem;
+  border: 1px solid rgba(201, 162, 74, 0.55);
+  border-radius: 0.875rem;
+  background: rgba(30, 22, 6, 0.4);
+}
+.cabox__label {
+  padding-left: 0.875rem;
+  font: 500 0.64rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-hi);
+}
+.stats {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 0.375rem 0.875rem;
+  font: 500 0.68rem/1.4 var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.stat {
+  display: contents;
+}
+.stat dt {
+  color: var(--gold-hi);
+}
+.stat dd {
+  color: var(--ink);
+}
+.screen--flock .screen__copy {
+  gap: 0.875rem;
+}
+
+/* ==========================================================================
+   Lightbox (memes)
+   ========================================================================== */
+.lightbox {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+}
+.lightbox[open] {
+  display: grid;
+  place-items: center;
+  animation: fade 0.25s ease-out;
+}
+.lightbox::backdrop {
+  background: rgba(2, 3, 8, 0.9);
+}
+.lightbox__inner {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 68vh, 560px);
+}
+.lightbox__close {
+  justify-self: end;
+}
+.lightbox__stage {
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--blue);
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(47, 123, 255, 0.3);
+  overflow: hidden;
+  background: #070a16;
+}
+.lightbox__stage > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.lightbox__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  font: 400 0.7rem/1 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.lightbox__bar [hidden] {
+  display: none;
+}
+@keyframes fade {
+  from { opacity: 0; }
+}
+
+/* ==========================================================================
+   Custom cursor (mouse only; cursor.ts adds .has-cursor): a thin ring that
+   eases after the pointer, a dot exactly on it, and an optional label
+   ========================================================================== */
+.cursor {
+  display: none;
+}
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+html.has-cursor .cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+html.has-cursor .cursor.is-on {
+  opacity: 1;
+}
+.cursor__ring,
+.cursor__dot,
+.cursor__label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  will-change: transform;
+}
+.cursor__ring::before,
+.cursor__dot::before {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.cursor__ring::before {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(238, 243, 255, 0.85);
+  transition:
+    width 0.2s,
+    height 0.2s,
+    opacity 0.2s,
+    border-color 0.2s;
+}
+.cursor__dot::before {
+  width: 4px;
+  height: 4px;
+  background: var(--ink);
+}
+.cursor__label {
+  font: 600 0.62rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  translate: 22px -5px;
+  transition: opacity 0.15s;
+}
+.cursor.has-label .cursor__label {
+  opacity: 1;
+}
+.cursor.is-hot .cursor__ring::before {
+  width: 42px;
+  height: 42px;
+  border-color: var(--blue);
+}
+.cursor.has-label .cursor__ring::before {
+  width: 64px;
+  height: 64px;
+  border-color: var(--ink);
+}
+.cursor.is-blocked .cursor__ring::before,
+.cursor.is-blocked .cursor__dot::before {
+  opacity: 0.35;
+}
+.cursor.is-down .cursor__ring::before {
+  width: 22px;
+  height: 22px;
+}
+html.is-dragging .cursor__ring::before {
+  width: 52px;
+  height: 52px;
+}
+
+/* ==========================================================================
+   ?debug overlay (debug.ts)
+   ========================================================================== */
+.debug {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  z-index: 96;
+  max-width: calc(100vw - 16px);
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--blue);
+  background: rgba(2, 3, 8, 0.86);
+  color: var(--ink);
+  font: 400 10px/1.5 var(--f-mono);
+  white-space: pre-wrap;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Phones and narrow tablets: copy along the bottom, the rail becomes a strip
+   ========================================================================== */
+@media (max-width: 899px) {
+  :root {
+    --rail: 30px;
+    --gutter: 18px;
+    --edge: 14px;
+    --h-display: clamp(2rem, min(10.5vw, 6.4vh), 3.8rem);
+    --h-hero: clamp(2.8rem, 15vw, 5rem);
+  }
+  .screen {
+    align-items: flex-end;
+    padding: 96px calc(var(--rail) + var(--edge)) 132px var(--gutter);
+  }
+  .screen::before,
+  .screen--right::before {
+    background: linear-gradient(transparent 46%, rgba(2, 3, 8, 0.72) 66%, rgba(2, 3, 8, 0.94));
+  }
+  .screen--right {
+    justify-content: flex-start;
+  }
+  .screen__copy,
+  .screen--right .screen__copy {
+    width: 100%;
+    gap: 10px;
+    justify-items: start;
+    text-align: left;
+  }
+  .screen--crow .screen__copy {
+    margin-top: 0;
+  }
+  .screen__aside {
+    display: none;
+  }
+  .lede,
+  .quote blockquote {
+    font-size: 1rem;
+  }
+  .body {
+    font-size: 0.92rem;
+  }
+  .post {
+    padding: 12px 14px;
+  }
+  .post__text {
+    font-size: 0.92rem;
+  }
+  .hudlabel {
+    max-width: 70vw;
+  }
+  .hudlabel__sub {
+    display: none;
+  }
+  .hint {
+    display: none;
+  }
+  /* Room for the stop button and Buy on one row: the ticker waits for a wider screen. */
+  .music__track {
+    display: none;
+  }
+  .hud--br .ca {
+    display: none;
+  }
+  /* No room beside the music pill: X sits just above Buy. */
+  .hud--br {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .hud--br .btn {
+    min-height: 40px;
+    padding: 0 14px;
+  }
+  /* Screen 12 is long: on phones the HUD already carries Buy, and the stats wait for a bigger screen. */
+  .screen--flock .stats,
+  .screen--flock .cabox + .actions {
+    display: none;
+  }
+  /* Two long screens lose their lede on phones; the card and buttons carry them. */
+  .screen--post .lede,
+  .screen--flock .lede {
+    display: none;
+  }
+  .rail {
+    right: 0;
+  }
+  .rail__tick {
+    height: min(28px, calc((100dvh - 240px) / 12));
+    padding: 0 8px 0 12px;
+    gap: 6px;
+    font-size: 0.6rem;
+  }
+  .rail__name,
+  .rail__num {
+    display: none;
+  }
+  .rail__tick i,
+  .rail__tick:hover i {
+    width: 10px;
+  }
+  .rail__tick.is-active i {
+    width: 18px;
+  }
+  .entry {
+    align-content: end;
+    padding-top: 0;
+    padding-bottom: max(13vh, 90px);
+  }
+  .entry__actions {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: no ambient animation; nav.ts uses plain scroll-snap.
+   ========================================================================== */
+html.is-native {
+  scroll-snap-type: y mandatory;
+}
+html.is-native .screen {
+  position: relative;
+  min-height: 100vh;
+  visibility: visible;
+  scroll-snap-align: start;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee__in,
+  .music.is-on .eq i,
+  .lightbox[open] {
+    animation: none;
+  }
+  .btn,
+  .toast,
+  .rail__name,
+  .rail__tick i,
+  .cursor__ring::before {
+    transition: none;
+  }
+}
+
+/* A <dialog> sits in the browser's top layer, above the custom cursor ring,
+   so inside the lightbox the system cursor comes back. */
+html.has-cursor dialog[open],
+html.has-cursor dialog[open] * {
+  cursor: default !important;
+}
+html.has-cursor dialog[open] button {
+  cursor: pointer !important;
+}
