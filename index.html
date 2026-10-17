@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Coupon Crows ($CROW) · Collecting shiny returns</title>
+    <title>Lion’s Share ($ROAR) · Take the lion’s share.</title>
     <meta
       name="description"
-      content="Coupon Crows is a fictional community art project about the patient collector of the flock: the crow that gathers shiny things, coin by coin."
+      content="Lion’s Share is a fictional community art project about the pride, the hunt and the biggest slice. Take the lion’s share."
     />
     <meta name="theme-color" content="#020308" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -27,24 +27,24 @@
 
     <!-- Share cards. Set VITE_SITE_URL in .env so the image URL is absolute. -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Coupon Crows" />
-    <meta property="og:title" content="Coupon Crows ($CROW) · Collecting shiny returns" />
+    <meta property="og:site_name" content="Lion’s Share" />
+    <meta property="og:title" content="Lion’s Share ($ROAR) · Take the lion’s share." />
     <meta
       property="og:description"
-      content="Every flock needs a mascot. Nobody had drawn the crow. So we did. A fictional community art project."
+      content="Every pride needs a face. This one wears a suit and a mane. Take the lion’s share. A fictional community art project."
     />
     <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="The Coupon Crow mascot, a blue-black crow on a stack of coins with a coin in its beak, next to the words Coupon Crows, collecting shiny returns."
+      content="The Lion’s Share emblem, a geometric red lion head with an angular mane inside a notched coin ring, next to the words Lion’s Share, take the lion’s share."
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Coupon Crows ($CROW) · Collecting shiny returns" />
+    <meta name="twitter:title" content="Lion’s Share ($ROAR) · Take the lion’s share." />
     <meta
       name="twitter:description"
-      content="Every flock needs a mascot. Nobody had drawn the crow. So we did. A fictional community art project."
+      content="Every pride needs a face. This one wears a suit and a mane. Take the lion’s share. A fictional community art project."
     />
     <meta name="twitter:image" content="%VITE_SITE_URL%/og.png" />
   </head>
@@ -53,20 +53,20 @@
     <canvas id="gl" aria-hidden="true"></canvas>
 
     <!-- 0. Loader: a big 000 → 100 counter -->
-    <div class="boot" id="boot" role="status" aria-label="Loading Coupon Crows">
-      <span class="boot__corner boot__corner--tr">Coupon Crows · $CROW</span>
+    <div class="boot" id="boot" role="status" aria-label="Loading Lion’s Share">
+      <span class="boot__corner boot__corner--tr">Lion’s Share · $ROAR</span>
       <div class="boot__center">
         <div class="boot__count" id="bootCount" aria-hidden="true">000</div>
         <div class="boot__bar" aria-hidden="true"><i id="bootBar"></i></div>
-        <p class="boot__status" id="bootStatus">Collecting shiny things…</p>
+        <p class="boot__status" id="bootStatus">Gathering the pride…</p>
       </div>
       <span class="boot__corner boot__corner--bl">// Best with sound</span>
-      <span class="boot__corner boot__corner--br">Scroll down to follow the glint</span>
+      <span class="boot__corner boot__corner--br">Scroll down to join the hunt</span>
     </div>
 
     <!-- Entry: the star field and the emblem are live behind these -->
     <div class="entry" id="entry" hidden>
-      <h1 class="visually-hidden">Coupon Crows</h1>
+      <h1 class="visually-hidden">Lion’s Share</h1>
       <div class="entry__actions">
         <button class="pill pill--enter" type="button" data-enter="sound">Enter</button>
         <button class="textlink" type="button" data-enter="silent">Enter without sound</button>
@@ -77,7 +77,7 @@
     <div id="site" inert>
       <!-- Top right: which screen this is -->
       <header class="hudlabel" data-after-enter>
-        <p class="hudlabel__title"><span class="slashes" aria-hidden="true">//////</span> <b id="hudNum">01</b> — <span id="hudName">THE CROW</span></p>
+        <p class="hudlabel__title"><span class="slashes" aria-hidden="true">//////</span> <b id="hudNum">01</b> — <span id="hudName">THE LION</span></p>
         <p class="hudlabel__sub" id="hudSub"></p>
       </header>
 
@@ -88,7 +88,7 @@
 
       <!-- Bottom left: scroll hint and the music pill -->
       <div class="hud hud--bl" data-after-enter>
-        <p class="hint">Scroll down to follow the glint.</p>
+        <p class="hint">Scroll down to join the hunt.</p>
         <div class="music" role="group" aria-label="Music">
           <button class="music__power" id="sndToggle" type="button" aria-pressed="false">
             <svg class="music__icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -109,7 +109,7 @@
 
       <!-- Bottom right: X, contract address and buy, shown once config.ts has them -->
       <div class="hud hud--br" data-after-enter>
-        <a class="xlink" data-href="follow" href="#" aria-label="Coupon Crows on X">
+        <a class="xlink" data-href="follow" href="#" aria-label="Lion’s Share on X">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
         </a>
         <span class="slot" data-ca></span>

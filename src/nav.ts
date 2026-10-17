@@ -26,7 +26,7 @@ export interface NavOptions {
  * ignored until either the wheel goes quiet for GESTURE_GAP ms or the
  * deltas suddenly grow again (a fresh flick).
  *
- * Each screen's intro (text reveal, crow materialising) plays on arrival;
+ * Each screen's intro (text reveal, mascot materialising) plays on arrival;
  * nothing is tied to scroll position. The rail and #hash links jump directly.
  *
  * Reduced motion: the screens are a plain scroll-snapped page instead, and

@@ -26,7 +26,7 @@ if (!best) {
   server.printUrls()
 } else {
   const url = `http://${best.ip}:${port}/`
-  console.log(`\n  Coupon Crows is being served to your network.\n`)
+  console.log(`\n  Lion’s Share is being served to your network.\n`)
   console.log(`  On this computer   http://localhost:${port}/`)
   console.log(`  On your phone      ${url}            (${best.name})`)
   console.log(`  With debug overlay ${url}?debug`)

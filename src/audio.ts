@@ -28,7 +28,7 @@ interface Track {
 
 const TRACKS: Track[] = [
   {
-    name: 'Wire at Dusk',
+    name: 'Savanna at Dusk',
     bpm: 72,
     swing: 0.16,
     drums: true,
@@ -41,7 +41,7 @@ const TRACKS: Track[] = [
     ],
   },
   {
-    name: 'Shiny Things',
+    name: 'Golden Mane',
     bpm: 84,
     swing: 0.22,
     drums: true,
@@ -54,7 +54,7 @@ const TRACKS: Track[] = [
     ],
   },
   {
-    name: 'Nest Ledger',
+    name: 'Long Grass',
     bpm: 58,
     swing: 0,
     drums: false,
@@ -483,7 +483,7 @@ class Music {
     this.setTrack(this.index - 1)
   }
 
-  /** A small two-note caw. Silent unless the music is on. */
+  /** A small two-note call (a polite roar). Silent unless the music is on. */
   chirp() {
     const ctx = this.ctx
     if (this.muted || !ctx || ctx.state !== 'running') return

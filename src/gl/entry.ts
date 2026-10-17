@@ -12,8 +12,8 @@ import { C, stamp, svgStamp } from './shapes'
  * cursor pushes nearby stars aside). The emblem is a glass orb of points:
  * a lit sphere shell (bright limb, a highlight, a dimmer far side showing
  * through), the emblem's notched coin ring as a band wrapped round it, a
- * faint orbit ring, and the crow's head inside as a solid point sculpture,
- * held still at a three-quarter angle. Its key light leans toward the cursor.
+ * faint orbit ring, and the lion's head inside as a solid point sculpture,
+ * held still, turned almost to face you. Its key light leans toward the cursor.
  *
  * Everything the enter sequence animates lives in `state` (boot.ts drives it):
  *   vortex   the field spirals into the emblem
@@ -245,7 +245,8 @@ export async function createEntry(reduced: boolean) {
     // Most stars fill the whole view; the rest thicken a band through the middle.
     const thick = 0.4 + radius * (rnd() < 0.62 ? 0.3 : 0.07)
     const r = rnd()
-    const col = r < 0.16 ? C.blue : r < 0.3 ? C.pale : r < 0.315 ? C.gold : C.white
+    // Warm: mostly white, a good share of red, more gold than a cold field would carry.
+    const col = r < 0.17 ? C.red : r < 0.27 ? C.light : r < 0.33 ? C.gold : C.white
     field.add(Math.cos(a) * radius, g * thick, Math.sin(a) * radius, col, rnd() < 0.04 ? 0.05 + rnd() * 0.06 : 0.018 + rnd() * 0.024, 0.5 + rnd() * 0.9)
   }
   const fieldPts = field.build()
@@ -261,7 +262,7 @@ export async function createEntry(reduced: boolean) {
   fieldPts.material = new THREE.ShaderMaterial({ vertexShader: FIELD_VERT, fragmentShader: DOT_FRAG, uniforms: fieldU, ...additive })
   scene.add(fieldPts)
 
-  // ---- emblem: a glass orb of points with the crow's head inside -----------------
+  // ---- emblem: a glass orb of points with the lion's head inside -----------------
   const R = 1.75
   const emblem = new THREE.Group()
   scene.add(emblem)
@@ -278,7 +279,7 @@ export async function createEntry(reduced: boolean) {
     pts.material = new THREE.ShaderMaterial({ vertexShader: ORB_VERT, fragmentShader: DOT_FRAG, uniforms: u, ...additive })
     return pts
   }
-  const silver = (r: number) => (r < 0.7 ? C.white : r < 0.93 ? C.pale : C.blue)
+  const silver = (r: number) => (r < 0.68 ? C.white : r < 0.86 ? C.light : r < 0.95 ? C.red : C.gold)
 
   // The shell: an even spread over the sphere; seen in perspective, the limb gathers into a bright edge.
   const shell = new Cloud(12)
@@ -304,7 +305,7 @@ export async function createEntry(reduced: boolean) {
     const lat = (band.rand() - 0.5) * 0.24
     const rr = R * 1.015 * (1 + (band.rand() - 0.5) * 0.01)
     const edge = Math.abs(lat) > 0.1 || cell < 0.03 || cell > 0.83
-    band.add(Math.cos(a) * Math.cos(lat) * rr, Math.sin(lat) * rr, Math.sin(a) * Math.cos(lat) * rr, band.rand() < 0.85 ? C.white : C.pale, 0.008 + band.rand() * 0.008, edge ? 1.5 : 1)
+    band.add(Math.cos(a) * Math.cos(lat) * rr, Math.sin(lat) * rr, Math.sin(a) * Math.cos(lat) * rr, band.rand() < 0.75 ? C.white : band.rand() < 0.6 ? C.gold : C.light, 0.008 + band.rand() * 0.008, edge ? 1.5 : 1)
   }
   const bandPts = orbPart(band, [1.5, 1.2, 2, 1])
   const bandHolder = new THREE.Group()
@@ -317,7 +318,7 @@ export async function createEntry(reduced: boolean) {
   for (let i = 0, k = n(2600); i < k; i++) {
     const a = orbit.rand() * Math.PI * 2
     const rr = R * 1.24 + (orbit.rand() - 0.5) * 0.02
-    orbit.add(Math.cos(a) * rr, (orbit.rand() - 0.5) * 0.015, Math.sin(a) * rr, orbit.rand() < 0.75 ? C.white : C.blue, 0.006 + orbit.rand() * 0.006, 0.7)
+    orbit.add(Math.cos(a) * rr, (orbit.rand() - 0.5) * 0.015, Math.sin(a) * rr, orbit.rand() < 0.7 ? C.white : orbit.rand() < 0.5 ? C.gold : C.red, 0.006 + orbit.rand() * 0.006, 0.7)
   }
   const orbitPts = orbPart(orbit, [0.5, 0.3, 1, 0.3])
   const orbitHolder = new THREE.Group()
@@ -325,16 +326,16 @@ export async function createEntry(reduced: boolean) {
   orbitHolder.add(orbitPts)
   emblem.add(orbitHolder)
 
-  // The crow's head inside: the emblem's head, extruded into a solid sculpture.
+  // The lion's head inside: the emblem without its coin ring, extruded into a solid sculpture.
   const st = await svgStamp(symbolSvg.replace(/<circle[^>]*\/>/, ''), 640)
-  const box = R * 2.55 // the 64-unit viewBox; the head spans ~37 of it, about 1.5R wide
-  const depth = R * 0.42
-  const at = new THREE.Vector3(-((38.1 - 32) / 64) * box, ((34.15 - 32) / 64) * box, depth / 2)
+  const box = R * 2.15 // the 64-unit viewBox; head and mane span ~43 of it, about 1.65R wide
+  const depth = R * 0.32
+  const at = new THREE.Vector3(0, -((32.6 - 32) / 64) * box, depth / 2)
   const head = new Cloud(18)
   stamp(head, st, box, { count: fx.entry.symbol, depth, edge: 0.92, size: [0.008, 0.016], tint: silver, glow: 1 }, at)
-  // Turned back toward the camera (the orb is at three-quarters), so his profile reads.
+  // Turned back toward the camera (the orb is at three-quarters), so he looks out at you.
   const headHolder = new THREE.Group()
-  headHolder.rotation.set(-0.12, 0.36, 0)
+  headHolder.rotation.set(-0.24, 0.4, 0)
   headHolder.add(orbPart(head, [1.3, 1.4, 1.8, 1.2], 1, new THREE.Vector3(0, 0, 0), depth / 2))
   emblem.add(headHolder)
 
@@ -355,7 +356,7 @@ export async function createEntry(reduced: boolean) {
   for (let i = 0, k = n(3000); i < k; i++) {
     const a = ringCloud.rand() * Math.PI * 2
     const rr = R * 1.32 + (ringCloud.rand() - 0.5) * 0.12
-    ringCloud.add(Math.cos(a) * rr, Math.sin(a) * rr, (ringCloud.rand() - 0.5) * 0.08, ringCloud.rand() < 0.3 ? C.pale : C.white, 0.012 + ringCloud.rand() * 0.016, 0.9)
+    ringCloud.add(Math.cos(a) * rr, Math.sin(a) * rr, (ringCloud.rand() - 0.5) * 0.08, ringCloud.rand() < 0.3 ? C.light : ringCloud.rand() < 0.2 ? C.gold : C.white, 0.012 + ringCloud.rand() * 0.016, 0.9)
   }
   const ringPts = ringCloud.build()
   const ringU = { ...symU, uForm: { value: 0 }, uGlow: { value: 0 } }
@@ -371,8 +372,8 @@ export async function createEntry(reduced: boolean) {
     c.width = c.height = 256
     const g = c.getContext('2d')!
     const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128)
-    grad.addColorStop(0, 'rgba(190,210,255,0.07)')
-    grad.addColorStop(0.35, 'rgba(47,123,255,0.028)')
+    grad.addColorStop(0, 'rgba(255,214,196,0.07)')
+    grad.addColorStop(0.35, 'rgba(229,35,47,0.03)')
     grad.addColorStop(1, 'rgba(2,3,8,0)')
     g.fillStyle = grad
     g.fillRect(0, 0, 256, 256)
@@ -386,7 +387,7 @@ export async function createEntry(reduced: boolean) {
   const shock = new Cloud(14)
   for (let i = 0, k = n(3000); i < k; i++) {
     const a = shock.rand() * Math.PI * 2
-    shock.add(Math.cos(a), Math.sin(a), (shock.rand() - 0.5) * 0.2, shock.rand() < 0.4 ? C.pale : C.white, 0.02 + shock.rand() * 0.02)
+    shock.add(Math.cos(a), Math.sin(a), (shock.rand() - 0.5) * 0.2, shock.rand() < 0.4 ? C.light : C.white, 0.02 + shock.rand() * 0.02)
   }
   const shockPts = shock.build()
   const shockU = { uProj: shared.uProj, uShock: { value: 0 } }
@@ -406,7 +407,7 @@ export async function createEntry(reduced: boolean) {
     const rad = 0.35 + Math.pow(sr(), 0.7) * 7
     const z = sr() * DEPTH
     const seed = sr()
-    const c = sr() < 0.3 ? C.blue : sr() < 0.5 ? C.pale : C.white
+    const c = sr() < 0.3 ? C.red : sr() < 0.45 ? C.light : sr() < 0.25 ? C.gold : C.white
     const k = 1.2 + sr() * 1.8
     for (let e = 0; e < 2; e++) {
       const j = i * 2 + e

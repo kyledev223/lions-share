@@ -10,13 +10,13 @@ interface Scheme {
 }
 
 const SCHEMES: Scheme[] = [
-  { bg: '#050818', fg: '#EDEEF2', acc: '#2F7BFF' },
-  { bg: '#2F7BFF', fg: '#020308', acc: '#EDEEF2' },
-  { bg: '#EDEEF2', fg: '#020308', acc: '#2F7BFF' },
-  { bg: '#0B1B45', fg: '#EDEEF2', acc: '#7FB0FF' },
+  { bg: '#120607', fg: '#FFF4EC', acc: '#E5232F' },
+  { bg: '#E5232F', fg: '#120607', acc: '#FFF4EC' },
+  { bg: '#FFF4EC', fg: '#120607', acc: '#E5232F' },
+  { bg: '#5A0A12', fg: '#FFF4EC', acc: '#C9A24A' },
 ]
 
-type Motif = 'wire' | 'coin' | 'eye' | 'stack' | 'head'
+type Motif = 'coin' | 'head' | 'horizon' | 'stack' | 'eye'
 
 export interface PlaceholderSpec {
   top: string[]
@@ -27,9 +27,12 @@ export interface PlaceholderSpec {
 
 type Ctx = CanvasRenderingContext2D
 
-const fill = (c: Ctx, d: string, color: string) => {
+const poly = (c: Ctx, pts: [number, number][], color: string) => {
   c.fillStyle = color
-  c.fill(new Path2D(d))
+  c.beginPath()
+  pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)))
+  c.closePath()
+  c.fill()
 }
 const disc = (c: Ctx, x: number, y: number, r: number, color: string) => {
   c.fillStyle = color
@@ -45,72 +48,64 @@ const ring = (c: Ctx, x: number, y: number, r: number, color: string, width: num
   c.stroke()
 }
 
-function star(c: Ctx, x: number, y: number, r: number, color: string) {
+/** A four-point spark. */
+function spark(c: Ctx, x: number, y: number, r: number, color: string) {
   const a = r * 0.28
-  c.fillStyle = color
-  c.beginPath()
-  c.moveTo(x, y - r)
-  c.lineTo(x + a, y - a)
-  c.lineTo(x + r, y)
-  c.lineTo(x + a, y + a)
-  c.lineTo(x, y + r)
-  c.lineTo(x - a, y + a)
-  c.lineTo(x - r, y)
-  c.lineTo(x - a, y - a)
-  c.fill()
+  poly(c, [[x, y - r], [x + a, y - a], [x + r, y], [x + a, y + a], [x, y + r], [x - a, y + a], [x - r, y], [x - a, y - a]], color)
 }
 
-/** Small crow silhouette; (x, y) is where the feet touch down. */
-function bird(c: Ctx, x: number, y: number, s: number, color: string, eye: string, flip = false) {
-  c.save()
-  c.translate(x, y)
-  c.scale(flip ? -s : s, s)
-  fill(c, 'M-14 -20 L-58 -2 L-48 8 L-6 -8 Z', color)
-  c.save()
-  c.translate(0, -26)
-  c.rotate((-22 * Math.PI) / 180)
-  c.beginPath()
-  c.ellipse(0, 0, 27, 20, 0, 0, Math.PI * 2)
-  c.fill()
-  c.restore()
-  disc(c, 19, -52, 16, color)
-  fill(c, 'M31 -60 L60 -50 L31 -43 Z', color)
-  c.fillRect(-8, -8, 4, 9)
-  c.fillRect(6, -8, 4, 9)
-  disc(c, 24, -55, 4, eye)
-  c.restore()
+/** The emblem's lion head, simplified: a ray mane, a face, two eye slits and a nose. (x, y) is its centre. */
+function lion(c: Ctx, x: number, y: number, s: number, sc: Scheme, mane = sc.fg, face = sc.acc) {
+  const rays: [number, number][] = []
+  for (let i = 0; i < 24; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 12
+    const r = i % 2 ? 15.6 : i % 4 === 0 ? 23.2 : 21.4
+    rays.push([x + Math.cos(a) * r * s, y + Math.sin(a) * r * s])
+  }
+  poly(c, rays, mane)
+  const F = (pts: [number, number][]) => pts.map(([px, py]) => [x + (px - 32) * s, y + (py - 32.6) * s] as [number, number])
+  poly(c, F([[25.2, 21.6], [38.8, 21.6], [43.2, 27.4], [42, 35.2], [36.4, 42.6], [32, 44.6], [27.6, 42.6], [22, 35.2], [20.8, 27.4]]), face)
+  poly(c, F([[24.6, 28.4], [30.2, 30.2], [29.6, 31.9], [25.4, 30.6]]), sc.bg)
+  poly(c, F([[39.4, 28.4], [33.8, 30.2], [34.4, 31.9], [38.6, 30.6]]), sc.bg)
+  poly(c, F([[28.6, 34.6], [35.4, 34.6], [32, 38.8]]), sc.bg)
 }
 
 function art(c: Ctx, motif: Motif, s: Scheme) {
   switch (motif) {
-    case 'wire':
-      c.strokeStyle = s.fg
-      c.lineWidth = 4
-      c.beginPath()
-      c.moveTo(-10, 318)
-      c.quadraticCurveTo(200, 348, 410, 318)
-      c.stroke()
-      bird(c, 96, 326, 1.15, s.fg, s.acc)
-      bird(c, 206, 334, 1.5, s.fg, s.acc)
-      bird(c, 318, 328, 1.05, s.fg, s.acc, true)
-      star(c, 318, 196, 26, s.acc)
-      break
     case 'coin':
       disc(c, 200, 286, 112, s.fg)
       ring(c, 200, 286, 88, s.acc, 5)
       c.fillStyle = s.bg
       c.textAlign = 'center'
       c.font = '64px Anton, Impact, sans-serif'
-      c.fillText('CROW', 200, 308)
+      c.fillText('ROAR', 200, 308)
       c.textAlign = 'left'
-      star(c, 292, 196, 40, s.acc)
+      spark(c, 300, 192, 36, s.acc)
       break
-    case 'eye':
-      disc(c, 200, 290, 118, s.fg)
-      disc(c, 212, 294, 72, s.acc)
-      disc(c, 218, 296, 36, s.bg)
-      disc(c, 238, 270, 13, s.fg)
-      fill(c, 'M60 180 L340 232 L340 196 L60 150 Z', s.bg)
+    case 'head':
+      lion(c, 214, 288, 4.6, s)
+      spark(c, 348, 196, 24, s.acc)
+      break
+    case 'horizon':
+      // A low sun behind rolling grass, and a lion's mane rising over the ridge.
+      c.save()
+      c.beginPath()
+      c.rect(0, 0, 400, 340)
+      c.clip()
+      disc(c, 250, 340, 120, s.acc)
+      for (let i = 0; i < 5; i++) {
+        c.fillStyle = s.bg
+        c.fillRect(120, 250 + i * 18, 260, 5 + i)
+      }
+      c.restore()
+      c.fillStyle = s.fg
+      c.beginPath()
+      c.moveTo(0, 360)
+      for (let x = 0; x <= 400; x += 20) c.lineTo(x, 338 - Math.sin(x * 0.03) * 14 - (x % 40 ? 0 : 10))
+      c.lineTo(400, 424)
+      c.lineTo(0, 424)
+      c.fill()
+      lion(c, 120, 318, 1.9, s, s.fg, s.acc)
       break
     case 'stack':
       ;[1, 2, 4, 6].forEach((n, i) => {
@@ -121,22 +116,26 @@ function art(c: Ctx, motif: Motif, s: Scheme) {
           c.fill()
         }
       })
-      bird(c, 326, 256, 1.05, s.fg, s.acc)
+      lion(c, 112, 268, 1.9, s)
       break
-    case 'head':
-      disc(c, 96, 300, 150, s.fg)
-      fill(c, 'M206 232 Q318 250 372 306 L214 318 Z', s.fg)
-      fill(c, 'M216 326 L330 322 L220 356 Z', s.fg)
-      disc(c, 352, 318, 30, s.acc)
-      ring(c, 352, 318, 18, s.bg, 3)
-      disc(c, 150, 262, 30, s.bg)
-      disc(c, 156, 264, 15, s.acc)
-      star(c, 382, 268, 22, s.acc)
+    case 'eye':
+      // A cat's eye, close up: the iris, a tall slit pupil, a hard brow.
+      c.fillStyle = s.fg
+      c.beginPath()
+      c.ellipse(200, 292, 150, 92, 0, 0, Math.PI * 2)
+      c.fill()
+      disc(c, 206, 292, 78, s.acc)
+      c.fillStyle = s.bg
+      c.beginPath()
+      c.ellipse(206, 292, 14, 70, 0, 0, Math.PI * 2)
+      c.fill()
+      disc(c, 232, 262, 10, s.fg)
+      poly(c, [[40, 196], [360, 228], [360, 190], [40, 160]], s.bg)
       break
   }
 }
 
-/** Draws one 4:5 card. `n` is its 1-based number, shown as CAW-0n. */
+/** Draws one 4:5 card. `n` is its 1-based number, shown as ROAR-0n. */
 export function drawPlaceholder(spec: PlaceholderSpec, n: number): HTMLCanvasElement {
   const scale = 2
   const canvas = document.createElement('canvas')
@@ -153,7 +152,7 @@ export function drawPlaceholder(spec: PlaceholderSpec, n: number): HTMLCanvasEle
   c.fillStyle = s.fg
   c.globalAlpha = 0.7
   c.font = '500 13px "JetBrains Mono", monospace'
-  c.fillText(`////// CAW-${String(n).padStart(2, '0')}`, 24, 38)
+  c.fillText(`////// ROAR-${String(n).padStart(2, '0')}`, 24, 38)
   c.globalAlpha = 1
 
   c.font = '56px Anton, Impact, sans-serif'

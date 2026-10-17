@@ -7,7 +7,7 @@ import gsap from 'gsap'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'
 import { initCursor } from './cursor'
-import { loadCrow } from './gl/crow'
+import { loadMascot } from './gl/mascot'
 import { createEngine, type Engine } from './gl/engine'
 import { createEntry } from './gl/entry'
 import { setDensity } from './gl/points'
@@ -39,8 +39,8 @@ initSoundControl()
 const canvas = document.getElementById('gl') as HTMLCanvasElement
 const site = document.getElementById('site')!
 let nav: Nav
-/** Loader progress: the crow's download is most of the wait; the last stretch is building and warming the scenes. */
-let crowLoaded = 0
+/** Loader progress: the mascot's download is most of the wait; the last stretch is building and warming the scenes. */
+let mascotLoaded = 0
 let siteReady = false
 
 /** Canvas text needs the fonts in memory first; don't let a slow font hold the page forever. */
@@ -49,9 +49,9 @@ const fonts = Promise.race([
   new Promise((r) => setTimeout(r, 2500)),
 ])
 
-// The crow is the biggest download; start it straight away rather than after the fonts.
-const crowLoad = loadCrow('/assets/crow/crow.glb', reduced, (f) => (crowLoaded = f))
-crowLoad.catch(() => {}) // reported through `ready`
+// The mascot is the biggest download (once lion.glb exists); start it straight away rather than after the fonts.
+const mascotLoad = loadMascot('/assets/lion/lion.glb', reduced, (f) => (mascotLoaded = f))
+mascotLoad.catch(() => {}) // reported through `ready`
 
 const ready: Promise<Engine> = fonts.then(async () => {
   const memes = buildMemes()
@@ -68,12 +68,12 @@ const ready: Promise<Engine> = fonts.then(async () => {
     },
   })
 
-  const [crow, entry, stages] = await Promise.all([
-    crowLoad,
+  const [mascot, entry, stages] = await Promise.all([
+    mascotLoad,
     createEntry(reduced),
     buildStages({ ring, openMeme: lightbox.showMeme }),
   ])
-  const engine = createEngine(canvas, { stages, entry, crow }, { reduced, finePointer })
+  const engine = createEngine(canvas, { stages, entry, mascot }, { reduced, finePointer })
   engine.start()
   nav = createNav({ engine, views, reduced })
   if (finePointer && !reduced) initCursor(engine, () => nav.locked)
@@ -125,7 +125,7 @@ ready.catch((err) => {
 runBoot({
   reduced,
   ready,
-  progress: () => (siteReady ? 1 : crowLoaded * 0.9),
+  progress: () => (siteReady ? 1 : mascotLoaded * 0.9),
   onEnter(withSound) {
     // Still inside the click, which is what lets browsers (iOS Safari included) start audio.
     music.start(withSound)

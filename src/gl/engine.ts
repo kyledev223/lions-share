@@ -6,7 +6,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { fx } from '../fx-config'
 import { lite } from '../lite'
-import type { ClipName, Crow } from './crow'
+import type { ClipName, Mascot } from './mascot'
 import type { Entry } from './entry'
 import { builtThin, pointCount, shared } from './points'
 import { fitFov } from './frame'
@@ -25,7 +25,7 @@ export interface StageCamera {
   fov: number
 }
 
-export interface CrowSpot {
+export interface MascotSpot {
   /** Where his feet are. */
   pos: THREE.Vector3
   /** Radians; 0 faces the camera (+Z). */
@@ -39,12 +39,12 @@ export interface Stage {
   id: string
   scene: THREE.Scene
   camera: StageCamera
-  /** Overrides for portrait screens; by default the camera backs off and centres on the crow. */
+  /** Overrides for portrait screens; by default the camera backs off and centres on the mascot. */
   portrait?: Partial<StageCamera>
-  crow?: CrowSpot
+  mascot?: MascotSpot
   update?(time: number, dt: number): void
-  enter?(crow: Crow): void
-  leave?(crow: Crow): void
+  enter?(mascot: Mascot): void
+  leave?(mascot: Mascot): void
   clickables?: Clickable[]
 }
 
@@ -59,17 +59,17 @@ export interface EngineOptions {
  * one composer: scene → bloom → final pass (post.ts).
  *
  *   entry  the star field and emblem (entry.ts)
- *   site   the active screen's stage (scenes.ts) with the crow borrowed into it
+ *   site   the active screen's stage (scenes.ts) with the mascot borrowed into it
  *
- * Screen changes go through `go()`: the outgoing points scatter, the crow
- * dissolves, then the next stage assembles and the crow scans back in.
+ * Screen changes go through `go()`: the outgoing points scatter, the mascot
+ * dissolves, then the next stage assembles and the mascot scans back in.
  */
-export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]; entry: Entry; crow: Crow }, opts: EngineOptions) {
-  const { stages, entry, crow } = parts
+export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]; entry: Entry; mascot: Mascot }, opts: EngineOptions) {
+  const { stages, entry, mascot } = parts
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false })
   renderer.setClearColor(0x020308, 1)
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace // the final pass encodes sRGB itself
-  crow.useRenderer(renderer)
+  mascot.useRenderer(renderer)
 
   const camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.05, 400)
   const target = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 })
@@ -144,8 +144,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
         tgt = stage.portrait.target ?? tgt
         fov = stage.portrait.fov ?? fov
       } else {
-        // Back off and swing round to keep the crow (or the scene centre) in frame.
-        const focusX = stage.crow ? stage.crow.pos.x : tgt.x
+        // Back off and swing round to keep the mascot (or the scene centre) in frame.
+        const focusX = stage.mascot ? stage.mascot.pos.x : tgt.x
         tgt = tgt.clone().setX(THREE.MathUtils.lerp(tgt.x, focusX, 0.85))
         pos = pos.clone().setX(THREE.MathUtils.lerp(pos.x, focusX, 0.85))
         pos = tgt.clone().add(pos.clone().sub(tgt).multiplyScalar(1.45))
@@ -177,25 +177,25 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     shared.uProj.value = (height * pr) / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2))
   }
 
-  // ---- the crow moves into whichever stage is showing ---------------------------
-  function seatCrow(stage: Stage) {
-    crow.root.removeFromParent()
-    if (!stage.crow) return
-    const c = stage.crow
-    crow.root.position.copy(c.pos)
-    crow.root.rotation.set(0, c.rotY, 0)
-    crow.root.scale.setScalar(c.scale ?? 1)
-    stage.scene.add(crow.root)
-    crow.play(c.clip, 0.5)
-    crow.uniforms.uFloorY.value = c.pos.y
+  // ---- the mascot moves into whichever stage is showing ---------------------------
+  function seatMascot(stage: Stage) {
+    mascot.root.removeFromParent()
+    if (!stage.mascot) return
+    const c = stage.mascot
+    mascot.root.position.copy(c.pos)
+    mascot.root.rotation.set(0, c.rotY, 0)
+    mascot.root.scale.setScalar(c.scale ?? 1)
+    stage.scene.add(mascot.root)
+    mascot.play(c.clip, 0.5)
+    mascot.uniforms.uFloorY.value = c.pos.y
   }
 
   function setStage(index: number) {
-    if (index === active && crow.root.parent === stages[index].scene) return
-    stages[active].leave?.(crow)
+    if (index === active && mascot.root.parent === stages[index].scene) return
+    stages[active].leave?.(mascot)
     active = index
-    seatCrow(stages[active])
-    stages[active].enter?.(crow)
+    seatMascot(stages[active])
+    stages[active].enter?.(mascot)
   }
 
   // ---- render loop ---------------------------------------------------------------
@@ -230,18 +230,18 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     // Warm-up: draw one not-yet-seen stage per frame (see warm()).
     const cold = warming.shift()
     if (cold) {
-      seatCrow(cold)
+      seatMascot(cold)
       placeCamera(cold, time)
       renderPass.scene = cold.scene
       renderPass.camera = camera
       composer.render(dt)
       if (!warming.length) {
-        seatCrow(stages[active])
+        seatMascot(stages[active])
         warmed?.()
       }
     }
 
-    crow.update(dt, time)
+    mascot.update(dt, time)
     if (state.mode === 'entry') {
       entry.update(time, dt, opts.finePointer && pointer.inside ? { x: pointer.x, y: pointer.y } : null)
       renderPass.scene = entry.scene
@@ -251,7 +251,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
       const stage = stages[active]
       stage.update?.(opts.reduced ? 0 : time, dt)
       placeCamera(stage, time)
-      if (crow.root.parent) crow.uniforms.uTopY.value = crow.topY()
+      if (mascot.root.parent) mascot.uniforms.uTopY.value = mascot.topY()
       entry.followCamera(camera)
       renderPass.scene = stage.scene
       renderPass.camera = camera
@@ -260,7 +260,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     entry.tickStreaks(dt)
     post.uTime.value = opts.reduced ? 0 : time
     post.uMouse.value.set(pointer.cx * pr, (height - pointer.cy) * pr, view.lens)
-    crow.uniforms.uGlitch.value = post.uGlitch.value
+    mascot.uniforms.uGlitch.value = post.uGlitch.value
     composer.render(dt)
   }
 
@@ -298,7 +298,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     post,
     entry,
     stages,
-    crow,
+    mascot,
     camera,
     get active() {
       return active
@@ -314,12 +314,12 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     showSite(index = active) {
       state.mode = 'site'
       active = index
-      seatCrow(stages[active])
-      stages[active].enter?.(crow)
+      seatMascot(stages[active])
+      stages[active].enter?.(mascot)
     },
     /**
      * The screen change: scatter out (with a glitch), swap, assemble in.
-     * Resolves when input may resume (~0.9s); the crow keeps scanning in for a moment longer.
+     * Resolves when input may resume (~0.9s); the mascot keeps scanning in for a moment longer.
      */
     go(index: number, onSwap: () => void): Promise<void> {
       const tOut = opts.reduced ? 0.15 : fx.transition.out
@@ -335,13 +335,13 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
         tl.to(shared.uAssemble, { value: 0, duration: tOut, ease: 'power2.in' }, 0)
           .to(post.uGlitch, { value: 1, duration: tOut * 0.8, ease: 'power2.in' }, 0)
           .to(post.uBurst, { value: 0.3, duration: tOut, ease: 'power2.in' }, 0)
-          .to(crow.uniforms.uDissolve, { value: 1, duration: tOut, ease: 'power1.in' }, 0)
+          .to(mascot.uniforms.uDissolve, { value: 1, duration: tOut, ease: 'power1.in' }, 0)
           .to(state, { dolly: 1, duration: tOut, ease: 'power2.in' }, 0)
           .call(
             () => {
               setStage(index)
-              crow.uniforms.uDissolve.value = 0
-              crow.uniforms.uMaterialize.value = 0
+              mascot.uniforms.uDissolve.value = 0
+              mascot.uniforms.uMaterialize.value = 0
               state.dolly = -1
               onSwap()
             },
@@ -352,8 +352,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
           .to(state, { dolly: 0, duration: tIn + 0.2, ease: 'power3.out' }, tOut)
           .to(post.uGlitch, { value: 0, duration: tIn * 0.8, ease: 'power2.out' }, tOut)
           .to(post.uBurst, { value: 0, duration: tIn, ease: 'power2.out' }, tOut)
-          .to(crow.uniforms.uMaterialize, { value: 1, duration: fx.transition.intro - 0.1, ease: 'power2.inOut' }, tOut + 0.05)
-        // Input comes back after the swap settles, not after the crow finishes scanning.
+          .to(mascot.uniforms.uMaterialize, { value: 1, duration: fx.transition.intro - 0.1, ease: 'power2.inOut' }, tOut + 0.05)
+        // Input comes back after the swap settles, not after the mascot finishes scanning.
         tl.call(resolve, [], tOut + tIn)
       })
     },

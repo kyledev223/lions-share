@@ -1,19 +1,19 @@
 /**
- * Builds public/assets/crow/crow.glb from the raw files in assets-raw/crow/.
+ * Builds public/assets/lion/lion.glb from the raw files in assets-raw/lion/.
  *
- *   npm run crow
+ *   npm run mascot
  *
- * Drop new files into assets-raw/crow/ and run it again:
- *   - the Meshy model and/or Mixamo FBX exports (Mixamo names such as
+ * Drop new files into assets-raw/lion/ and run it again:
+ *   - the generated model and/or Mixamo FBX exports (Mixamo names such as
  *     "Sitting Idle.fbx" are renamed to the site's slugs, see RENAMES)
- *   - crow-apose.png, the front image the model was generated from
+ *   - lion-apose.png, the front image the model was generated from
  *
- * Steps: rename → Blender (scripts/crow/build.py: unwrap with xatlas, project
- * + bake the colour and AO/roughness textures, merge every clip onto one rig,
- * export) → glTF-Transform (attach the AO/roughness map, WebP textures,
- * prune, resample, quantize, meshopt) → public/assets/crow/crow.glb.
+ * Steps: rename → Blender (scripts/mascot/build.py: unwrap with xatlas,
+ * project + bake the colour and AO/roughness textures, merge every clip onto
+ * one rig, export) → glTF-Transform (attach the AO/roughness map, WebP
+ * textures, prune, resample, quantize, meshopt) → public/assets/lion/lion.glb.
  * Previews of the bake (turntable, projection fit, regions) go to
- * assets-raw/crow/preview/, along with the cached UV atlas.
+ * assets-raw/lion/preview/, along with the cached UV atlas.
  *
  * Needs Blender 4.2+. It is found via $BLENDER, then PATH, then the usual
  * install folders. xatlas is pip-installed for Blender's Python into
@@ -26,9 +26,9 @@ import { dirname, join, resolve, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const SRC = join(root, 'assets-raw', 'crow')
+const SRC = join(root, 'assets-raw', 'lion')
 const PREVIEW = join(SRC, 'preview')
-const OUT = join(root, 'public', 'assets', 'crow', 'crow.glb')
+const OUT = join(root, 'public', 'assets', 'lion', 'lion.glb')
 
 /** Mixamo export name (lower case, no extension) → slug used by the site. */
 const RENAMES = {
@@ -44,7 +44,7 @@ const RENAMES = {
   waving: 'waving',
 }
 
-const log = (...a) => console.log('[crow]', ...a)
+const log = (...a) => console.log('[mascot]', ...a)
 
 // ---- 1. rename -------------------------------------------------------------
 if (!existsSync(SRC)) throw new Error(`Missing ${SRC}`)
@@ -63,7 +63,7 @@ for (const file of readdirSync(SRC)) {
   renameSync(sameFile ? to + '.tmp' : join(SRC, file), to)
   log(`renamed "${file}" → ${slug}.fbx`)
 }
-if (!existsSync(join(SRC, 'crow-apose.png'))) throw new Error('Missing assets-raw/crow/crow-apose.png (the front image the model was made from)')
+if (!existsSync(join(SRC, 'lion-apose.png'))) throw new Error('Missing assets-raw/lion/lion-apose.png (the front image the model was made from)')
 
 // ---- 2. Blender --------------------------------------------------------------
 function findBlender() {
@@ -91,9 +91,9 @@ function findBlender() {
 const blender = findBlender()
 log('blender:', blender)
 mkdirSync(PREVIEW, { recursive: true })
-const work = mkdtempSync(join(tmpdir(), 'crow-'))
-const tmp = join(work, 'crow.glb')
-execFileSync(blender, ['-b', '--factory-startup', '-noaudio', '--python', join(root, 'scripts/crow/build.py'), '--', SRC, tmp, PREVIEW, work], {
+const work = mkdtempSync(join(tmpdir(), 'lion-'))
+const tmp = join(work, 'lion.glb')
+execFileSync(blender, ['-b', '--factory-startup', '-noaudio', '--python', join(root, 'scripts/mascot/build.py'), '--', SRC, tmp, PREVIEW, work], {
   stdio: ['ignore', 'inherit', 'inherit'],
 })
 if (!existsSync(tmp)) throw new Error('Blender did not write the .glb')
@@ -112,7 +112,7 @@ const doc = await io.read(tmp)
 
 // AO (R) and roughness (G), baked alongside the colour; glTF reads both from one texture.
 const material = doc.getRoot().listMaterials()[0]
-const orm = doc.createTexture('crow-orm').setImage(readFileSync(join(work, 'crow-orm.png'))).setMimeType('image/png').setURI('crow-orm.png')
+const orm = doc.createTexture('lion-orm').setImage(readFileSync(join(work, 'lion-orm.png'))).setMimeType('image/png').setURI('lion-orm.png')
 material.setMetallicRoughnessTexture(orm).setRoughnessFactor(1).setMetallicFactor(0).setOcclusionTexture(orm).setOcclusionStrength(1)
 
 await doc.transform(

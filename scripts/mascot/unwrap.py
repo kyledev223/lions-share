@@ -1,5 +1,5 @@
 """
-UV atlas for the crow, with xatlas. Run by build.py in its own process
+UV atlas for the mascot, with xatlas. Run by build.py in its own process
 (Blender's Python, outside Blender: xatlas crashes when loaded inside it):
 
   python -I unwrap.py <mesh.npz> <out.npz> <deps dir> <texture size>
@@ -17,7 +17,7 @@ sys.path.insert(0, deps)
 try:
     import xatlas
 except ImportError:
-    print("[crow] installing xatlas into", deps, flush=True)
+    print("[mascot] installing xatlas into", deps, flush=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "--target", deps, "xatlas"], check=True)
     import xatlas
 
@@ -35,5 +35,5 @@ po.padding = 4
 po.bilinear = True
 atlas.generate(co, po)
 vmap, idx, uvs = atlas[0]
-print("[crow] xatlas: %d charts, %d verts, %.0f%% of the texture used, %.0fs" % (atlas.chart_count, len(vmap), atlas.utilization * 100, time.time() - t), flush=True)
+print("[mascot] xatlas: %d charts, %d verts, %.0f%% of the texture used, %.0fs" % (atlas.chart_count, len(vmap), atlas.utilization * 100, time.time() - t), flush=True)
 np.savez(out, vmap=vmap, idx=idx, uvs=uvs)

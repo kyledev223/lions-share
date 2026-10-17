@@ -9,8 +9,9 @@ import { Cloud, n } from './points'
  * go through the global density scale.
  */
 export const C = {
-  blue: new THREE.Color(fx.palette.blue),
-  pale: new THREE.Color(fx.palette.pale),
+  red: new THREE.Color(fx.palette.red),
+  light: new THREE.Color(fx.palette.light),
+  deep: new THREE.Color(fx.palette.deep),
   white: new THREE.Color(fx.palette.white),
   gold: new THREE.Color(fx.palette.gold),
 }
@@ -19,10 +20,10 @@ export const C = {
 export type Tint = THREE.Color | ((r: number) => THREE.Color)
 const pick = (t: Tint, r: number) => (typeof t === 'function' ? t(r) : t)
 
-/** The usual particle mix: mostly white, some pale blue, a little blue. */
-export const sparkle = (r: number): THREE.Color => (r < 0.55 ? C.white : r < 0.85 ? C.pale : C.blue)
-export const goldMix = (r: number): THREE.Color => (r < 0.7 ? C.gold : r < 0.92 ? C.white : C.pale)
-export const blueMix = (r: number): THREE.Color => (r < 0.5 ? C.blue : r < 0.85 ? C.pale : C.white)
+/** The usual particle mix: mostly white and red, a fair share of gold, a little light red. */
+export const sparkle = (r: number): THREE.Color => (r < 0.48 ? C.white : r < 0.74 ? C.red : r < 0.82 ? C.light : C.gold)
+export const goldMix = (r: number): THREE.Color => (r < 0.72 ? C.gold : r < 0.9 ? C.white : C.red)
+export const redMix = (r: number): THREE.Color => (r < 0.5 ? C.red : r < 0.72 ? C.light : r < 0.9 ? C.white : C.gold)
 
 export interface Stroke {
   /** Points per world unit. */
@@ -100,7 +101,7 @@ export function box(c: Cloud, center: THREE.Vector3, size: THREE.Vector3, s: Str
   ]) line(c, a, b, s)
 }
 
-/** Points spread over a filled box volume (dust, crowds). */
+/** Points spread over a filled box volume (dust, an audience). */
 export function volume(c: Cloud, min: THREE.Vector3, max: THREE.Vector3, count: number, s: Stroke = {}) {
   for (let i = 0, k = n(count); i < k; i++) {
     v.set(min.x + (max.x - min.x) * c.rand(), min.y + (max.y - min.y) * c.rand(), min.z + (max.z - min.z) * c.rand())

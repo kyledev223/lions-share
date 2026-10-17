@@ -17,25 +17,25 @@ export interface Meme {
   canvas?: HTMLCanvasElement
 }
 
-/** Frames in the ring. More than ~12 gets crowded on phones. */
+/** Frames in the ring. More than ~12 gets too busy on phones. */
 const RING_SIZE = 10
 
 /** Alt text for real images, keyed by filename. */
 const ALT: Record<string, string> = {
-  // '01-wire.png': 'Three crows on a wire, one holding a coin',
+  // '01-throne.png': 'The lion on his throne, holding a gold coin',
 }
 
 const PLACEHOLDERS: PlaceholderSpec[] = [
-  { top: ['POV: THE', 'COUPON LANDED'], bottom: 'RIGHT ON SCHEDULE', motif: 'coin', scheme: 0 },
-  { top: ['ME WAITING FOR', 'THE NEXT ONE'], bottom: 'PATIENTLY. MENACINGLY.', motif: 'wire', scheme: 1 },
-  { top: ['FOUND: ONE (1)', 'SHINY THING'], bottom: 'IT LIVES IN THE NEST NOW', motif: 'head', scheme: 2 },
-  { top: ['GULLS SHOUT.', 'CROWS COLLECT.'], bottom: 'KNOW THE DIFFERENCE', motif: 'stack', scheme: 3 },
-  { top: ['SEES COIN.', 'REMEMBERS COIN.'], bottom: 'FOR SEVEN TO TEN YEARS', motif: 'eye', scheme: 0 },
-  { top: ["HE'S NOT LATE."], bottom: "HE'S ACCRUING", motif: 'head', scheme: 1 },
-  { top: ['NEST STATUS:', 'FULL OF FOIL'], bottom: 'NO FURTHER QUESTIONS', motif: 'stack', scheme: 2 },
-  { top: ['CAW IS A FULL', 'SENTENCE'], bottom: 'YOU HEARD THE BIRD', motif: 'eye', scheme: 3 },
-  { top: ['MONDAY: WIRE.', 'TUESDAY: WIRE.'], bottom: 'CONSISTENCY IS A STRATEGY', motif: 'wire', scheme: 2 },
-  { top: ['ONE MORE COIN', "WON'T HURT"], bottom: 'SAID EVERY CROW, EVERY DAY', motif: 'coin', scheme: 1 },
+  { top: ['POV: YOU GOT', 'THE BIG SLICE'], bottom: 'AND YOU EARNED IT', motif: 'coin', scheme: 0 },
+  { top: ['ME WATCHING', 'THE CHART'], bottom: 'LOW IN THE LONG GRASS', motif: 'horizon', scheme: 1 },
+  { top: ['SHARE? I TAKE', 'THE BIG ONE'], bottom: 'IT IS LITERALLY THE NAME', motif: 'head', scheme: 2 },
+  { top: ['HYENAS LAUGH.', 'LIONS EAT.'], bottom: 'PICK YOUR SIDE OF THE FIRE', motif: 'stack', scheme: 3 },
+  { top: ['SEES DIP.', 'POUNCES.'], bottom: 'APEX BEHAVIOUR', motif: 'eye', scheme: 0 },
+  { top: ["HE'S NOT LAZY."], bottom: "HE'S CONSERVING ENERGY", motif: 'head', scheme: 1 },
+  { top: ['DEN STATUS:', 'FULLY STOCKED'], bottom: 'THE PRIDE EATS TONIGHT', motif: 'stack', scheme: 2 },
+  { top: ['ROAR IS A', 'LOVE LANGUAGE'], bottom: 'TELL YOUR CUBS', motif: 'eye', scheme: 3 },
+  { top: ['SLEEPS 20 HOURS.', 'STILL AHEAD.'], bottom: 'WORK SMARTER, NAP HARDER', motif: 'horizon', scheme: 2 },
+  { top: ['THE MANE IS', 'NON-NEGOTIABLE'], bottom: 'SO IS THE SUIT', motif: 'coin', scheme: 1 },
 ]
 
 const files = import.meta.glob<string>('./*.{png,jpg,jpeg,webp,gif,avif}', {
@@ -50,10 +50,10 @@ export function buildMemes(): Meme[] {
     .sort()
     .map((path) => {
       const file = path.replace('./', '')
-      return { id: file, src: files[path], alt: ALT[file] ?? 'Coupon Crows meme' }
+      return { id: file, src: files[path], alt: ALT[file] ?? 'Lion’s Share meme' }
     })
   const generated: Meme[] = PLACEHOLDERS.map((spec, i) => ({
-    id: `CAW-${String(i + 1).padStart(2, '0')}`,
+    id: `ROAR-${String(i + 1).padStart(2, '0')}`,
     alt: [...spec.top, spec.bottom].join(' '),
     canvas: drawPlaceholder(spec, i + 1),
   }))

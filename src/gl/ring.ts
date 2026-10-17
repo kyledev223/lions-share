@@ -29,7 +29,7 @@ const FRAME_W = 0.92
 const FRAME_H = FRAME_W * 1.25
 
 /**
- * The meme ring, in 3D, floating round the crow on screen 11. Drag with
+ * The meme ring, in 3D, floating round the mascot on screen 11. Drag with
  * inertia capped at a third of a turn, settles on the nearest frame, slow
  * auto-rotate when idle, arrow keys step one frame.
  *
@@ -47,23 +47,23 @@ export function createRing(memes: Meme[], reduced: boolean, radiusScale = 1) {
 
   const backTexture = canvasTexture(200, 250, (c, w, h) => {
     const g = c.createLinearGradient(0, 0, w * 0.6, h)
-    g.addColorStop(0, '#0d1a40')
-    g.addColorStop(1, '#04060f')
+    g.addColorStop(0, '#3a0a10')
+    g.addColorStop(1, '#0a0405')
     c.fillStyle = g
     c.fillRect(0, 0, w, h)
-    c.strokeStyle = 'rgba(237,238,242,.3)'
+    c.strokeStyle = 'rgba(255,244,236,.3)'
     c.lineWidth = 3
     c.strokeRect(1.5, 1.5, w - 3, h - 3)
-    c.fillStyle = '#2f7bff'
+    c.fillStyle = '#e5232f'
     c.font = '500 20px "JetBrains Mono", monospace'
     c.textAlign = 'center'
     c.fillText('//////', w / 2, h / 2 + 6)
   })
-  const backMaterial = new THREE.MeshBasicMaterial({ map: backTexture, color: new THREE.Color(0.35, 0.35, 0.4) })
+  const backMaterial = new THREE.MeshBasicMaterial({ map: backTexture, color: new THREE.Color(0.4, 0.36, 0.35) })
 
   // Every frame gets a glowing particle outline.
   const frameCloud = new Cloud(1150)
-  roundedRect(frameCloud, new THREE.Vector3(), FRAME_W + 0.05, FRAME_H + 0.05, 0.03, { density: 180, jitter: 0.004, size: [0.006, 0.013], tint: (r) => (r < 0.6 ? C.pale : C.white), glow: 1.6 })
+  roundedRect(frameCloud, new THREE.Vector3(), FRAME_W + 0.05, FRAME_H + 0.05, 0.03, { density: 180, jitter: 0.004, size: [0.006, 0.013], tint: (r) => (r < 0.45 ? C.light : r < 0.8 ? C.white : C.gold), glow: 1.6 })
   const frameTemplate = frameCloud.build({ twinkle: 0.4, scatter: 3 })
 
   const loader = new THREE.TextureLoader()
@@ -149,7 +149,7 @@ export function createRing(memes: Meme[], reduced: boolean, radiusScale = 1) {
         const m = f.material as THREE.MeshBasicMaterial
         const k = 0.15 + 0.6 * Math.max(0, facing) ** 1.5
         m.color.setRGB(k, k, k)
-        // The frame passing straight in front of the crow goes see-through, so he stays visible.
+        // The frame passing straight in front of the mascot goes see-through, so he stays visible.
         const front = THREE.MathUtils.smoothstep(facing, 0.8, 0.985)
         m.opacity = (0.25 + 0.7 * Math.max(0, facing)) * (1 - 0.72 * front)
       })

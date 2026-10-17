@@ -4,10 +4,10 @@ import type { Engine } from './gl/engine'
 import { shared } from './gl/points'
 
 const STATUS = [
-  [0, 'Collecting shiny things…'],
-  [38, 'Counting them twice…'],
-  [72, 'Pressing the suit…'],
-  [100, 'The nest is ready.'],
+  [0, 'Gathering the pride…'],
+  [38, 'Measuring out the share…'],
+  [72, 'Straightening the tie…'],
+  [100, 'The throne is warm.'],
 ] as const
 
 export interface BootOptions {
@@ -33,9 +33,9 @@ export interface BootOptions {
  *      0.4–1.2  the field spirals into the emblem, which spins up and
  *               brightens; a ring of points forms around it
  *      1.2–1.6  implosion to a point, a beat of darkness, then a shockwave,
- *               a blue-white flash and a colour burst (bass hit)
+ *               a warm white flash and a colour burst (bass hit)
  *      1.6–3.0  hyperspace: streaks, accelerating
- *      3.0–3.8  the streaks slow and settle into screen 01's hall; the crow
+ *      3.0–3.8  the streaks slow and settle into screen 01's throne room; the mascot
  *               scans in from the top, the title slides in
  *    Reduced motion: a 0.6s fade instead.
  */
@@ -48,7 +48,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
   const entry = document.getElementById('entry')!
 
   // The counter follows a 2.4s ease, but never runs ahead of the real load
-  // (the crow's download, then the scenes being built and warmed).
+  // (the mascot's download, then the scenes being built and warmed).
   const timed = { v: 0 }
   gsap.to(timed, { v: 100, duration: reduced ? 0.6 : 2.4, ease: 'power2.inOut' })
   let shown = 0
@@ -120,7 +120,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
   function sequence(withSound: boolean) {
     const es = engine.entry.state
     const post = engine.post
-    const crowU = engine.crow.uniforms
+    const mascotU = engine.mascot.uniforms
     let arrived = false
     let siteShown = false
 
@@ -130,7 +130,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       engine.showSite(0)
       engine.entry.carryStreaks(engine.stages[0].scene)
       shared.uAssemble.value = 0
-      crowU.uMaterialize.value = 0
+      mascotU.uMaterialize.value = 0
     }
     const arrive = () => {
       if (arrived) return
@@ -161,14 +161,14 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       .to(es, { streaks: 1, duration: 0.25, ease: 'power1.out' }, 1.55)
       .to(es, { warp: 1, duration: 1.4, ease: 'power2.in' }, 1.6)
       .to(es, { fov: 78, duration: 1.4, ease: 'power2.in' }, 1.6)
-      // 3.0–3.8: decelerate into the hall; the crow scans in; the title arrives.
+      // 3.0–3.8: decelerate into the throne room; the mascot scans in; the title arrives.
       .call(toSite, [], 3.0)
       .to(post.uBurst, { value: 0.45, duration: 0.08, ease: 'none' }, 3.0)
       .to(post.uBurst, { value: 0, duration: 0.6, ease: 'power2.out' }, 3.08)
       .to(es, { warp: 0, duration: 0.8, ease: 'power3.out' }, 3.0)
       .to(es, { streaks: 0, duration: 0.75, ease: 'power2.in' }, 3.05)
       .to(shared.uAssemble, { value: 1, duration: 0.9, ease: 'power3.out' }, 3.0)
-      .to(crowU.uMaterialize, { value: 1, duration: 1.1, ease: 'power2.inOut' }, 3.1)
+      .to(mascotU.uMaterialize, { value: 1, duration: 1.1, ease: 'power2.inOut' }, 3.1)
       .call(arrive, [], 3.3)
       .call(finish, [], 3.85)
 
@@ -187,7 +187,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       Object.assign(es, { vortex: 1, spin: 1, ring: 1, implode: 1, shock: 0, warp: 0, streaks: 0, fov: 55 })
       post.uFlash.value = post.uBurst.value = 0
       gsap.to(shared.uAssemble, { value: 1, duration: 0.5, ease: 'power3.out' })
-      gsap.to(crowU.uMaterialize, { value: 1, duration: 0.6, ease: 'power2.out' })
+      gsap.to(mascotU.uMaterialize, { value: 1, duration: 0.6, ease: 'power2.out' })
       arrive()
       finish()
     }

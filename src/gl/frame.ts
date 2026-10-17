@@ -1,7 +1,7 @@
 /**
  * The 3D framing matches the DOM's design frame (1920×940, see index.html).
  * Cameras keep their vertical field of view on wide screens; on narrower
- * ones they keep the horizontal field instead, so the crow stays the same
+ * ones they keep the horizontal field instead, so the mascot stays the same
  * fraction of the width from the copy on every desktop screen.
  */
 export const DESIGN_ASPECT = 1920 / 940

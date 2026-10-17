@@ -1,5 +1,5 @@
 {
-  "name": "coupon-crows",
+  "name": "lions-share",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -12,7 +12,7 @@
     "og": "node scripts/og.mjs",
     "build": "node scripts/og.mjs --optional && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "crow": "node scripts/crow.mjs"
+    "mascot": "node scripts/mascot.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

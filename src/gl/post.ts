@@ -25,7 +25,7 @@ export function finalPass() {
       uGlitch: { value: 0 },
       uBurst: { value: 0 },
       uFlash: { value: 0 },
-      uFlashColor: { value: new THREE.Color(0.82, 0.9, 1.0) },
+      uFlashColor: { value: new THREE.Color(1.0, 0.9, 0.84) },
       uFade: { value: 0 },
       uFadeColor: { value: new THREE.Color(0.008, 0.01, 0.03) },
       uMouse: { value: new THREE.Vector3(-1e4, -1e4, 0) },

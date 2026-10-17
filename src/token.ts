@@ -1,4 +1,4 @@
-import { config } from './config'
+import { config, PLACEHOLDER_ADDRESS } from './config'
 
 const shorten = (a: string) => (a.length > 13 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a)
 
@@ -12,19 +12,21 @@ function toast(message: string) {
   toastTimer = window.setTimeout(() => el.classList.remove('is-visible'), 1800)
 }
 
+const soonTag = () => {
+  const tag = document.createElement('span')
+  tag.className = 'tag'
+  tag.textContent = 'Coming soon'
+  return tag
+}
+
 /**
  * The contract address control, three ways:
  *   data-ca          corner pill: "CA 0x12…abcd COPY"
- *   data-ca="named"  "$CROW CA COPY" (screen 10)
+ *   data-ca="named"  "$ROAR CA COPY" (screen 10)
  *   data-ca="full"   the whole address with a COPY button (screen 12)
  */
 function contractControl(host: HTMLElement) {
   const address = config.contractAddress
-  if (!address) {
-    // Not shown until there is an address (screen 12's labelled box goes with it).
-    ;(host.closest('.cabox') ?? host).remove()
-    return
-  }
   const kind = host.dataset.ca || 'pill'
   const btn = document.createElement('button')
   btn.type = 'button'
@@ -41,6 +43,17 @@ function contractControl(host: HTMLElement) {
   else if (kind === 'named') btn.append(pre, copy)
   else btn.append(pre, addr, copy)
 
+  if (!address) {
+    addr.textContent = PLACEHOLDER_ADDRESS
+    btn.classList.add('is-disabled')
+    btn.setAttribute('aria-disabled', 'true')
+    btn.title = 'Coming soon'
+    btn.setAttribute('aria-label', 'Contract address, coming soon')
+    host.append(btn)
+    if (host.hasAttribute('data-tag')) host.append(soonTag())
+    return
+  }
+
   addr.textContent = kind === 'full' ? address : shorten(address)
   btn.setAttribute('aria-label', `Copy contract address ${address}`)
   btn.addEventListener('click', async () => {
@@ -56,11 +69,18 @@ function contractControl(host: HTMLElement) {
   host.append(btn)
 }
 
-/** variant: "primary" (blue pill), "gold" or "ghost". */
+/** variant: "primary" (red pill), "gold" or "ghost". */
 function linkControl(host: HTMLElement, label: string, url: string | null, variant: string) {
   const cls = `btn btn--${variant}`
   if (!url) {
-    host.remove()
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = `${cls} is-disabled`
+    btn.setAttribute('aria-disabled', 'true')
+    btn.title = 'Coming soon'
+    btn.textContent = label
+    host.append(btn)
+    if (host.hasAttribute('data-tag')) host.append(soonTag())
     return
   }
   const a = document.createElement('a')
@@ -74,7 +94,7 @@ function linkControl(host: HTMLElement, label: string, url: string | null, varia
 
 /**
  * Fills every [data-ca], [data-buy], [data-explorer] and [data-href] slot from
- * config. Slots without a value are removed, and so are rows left empty.
+ * config. Anything without a value yet shows greyed out and does nothing.
  */
 export function hydrateToken() {
   document.querySelectorAll<HTMLElement>('[data-ca]').forEach(contractControl)
@@ -88,12 +108,17 @@ export function hydrateToken() {
   const links: Record<string, string> = { community: config.communityUrl, follow: config.followUrl }
   document.querySelectorAll<HTMLAnchorElement>('a[data-href]').forEach((a) => {
     const url = links[a.dataset.href ?? ''] ?? '#'
-    if (url === '#') return a.remove()
     a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
+    if (url !== '#') {
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+    } else {
+      // Needs a real link before it does anything.
+      a.classList.add('is-disabled')
+      a.setAttribute('aria-disabled', 'true')
+      a.title = 'Coming soon'
+    }
   })
-  document.querySelectorAll('.actions, .hud--br').forEach((row) => !row.children.length && row.remove())
 
   const stats = document.getElementById('stats')
   if (stats) {
@@ -108,4 +133,10 @@ export function hydrateToken() {
       stats.append(cell)
     }
   }
+
+  // Placeholder "#" links shouldn't yank the page back to the top.
+  document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest?.('a[href="#"]')
+    if (a) e.preventDefault()
+  })
 }

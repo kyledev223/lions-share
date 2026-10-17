@@ -1,38 +1,42 @@
 /**
  * Contract address, links and token stats in one place.
  *
- * Controls that need a value only appear once it is set: while
- * `contractAddress`, `buyUrl` or `explorerUrl` is `null` (or a link is `'#'`),
- * the controls that depend on it aren't shown at all. Fill a value in and they
- * appear on their own: the address becomes copy-to-clipboard, the buttons
- * become real links.
+ * While `contractAddress`, `buyUrl` or `explorerUrl` is `null` (or a link is
+ * `'#'`), every control that depends on it renders greyed out with a "Coming
+ * soon" tag and does nothing on click. Fill a value in and the matching
+ * controls turn active on their own: the address becomes copy-to-clipboard,
+ * the buttons become real links.
  */
 export interface SiteConfig {
   name: string
   ticker: string
-  /** Full contract address, e.g. "0xAbc…". `null` = not shown. */
+  /** Full contract address, e.g. "0xAbc…". `null` = disabled placeholder. */
   contractAddress: string | null
-  /** Where "Buy $CROW" goes. `null` = not shown. */
+  /** Where "Buy $ROAR" goes. `null` = disabled placeholder. */
   buyUrl: string | null
-  /** Where "Explorer" goes. `null` = not shown. */
+  /** Where "Explorer" goes. `null` = disabled placeholder. */
   explorerUrl: string | null
-  /** Community and follow links. `'#'` = not shown. */
+  /** "Join the pride" and "Follow the roar" (also the X button in the corner). `'#'` = disabled placeholder. */
   communityUrl: string
   followUrl: string
   stats: { label: string; value: string }[]
 }
 
 export const config: SiteConfig = {
-  name: 'Coupon Crows',
-  ticker: '$CROW',
-  contractAddress: '9mDrSegcjj5QJP1Zf27XwzM7ScrE95RPRQdrPApzpump',
-  buyUrl: 'https://pump.fun/coin/9mDrSegcjj5QJP1Zf27XwzM7ScrE95RPRQdrPApzpump',
-  explorerUrl: 'https://solscan.io/token/9mDrSegcjj5QJP1Zf27XwzM7ScrE95RPRQdrPApzpump',
+  name: 'Lion’s Share',
+  ticker: '$ROAR',
+  contractAddress: null,
+  buyUrl: null,
+  explorerUrl: null,
   communityUrl: '#',
-  followUrl: 'https://x.com/couponcrowfun',
+  followUrl: '#',
   stats: [
-    { label: 'Token', value: 'Coupon Crows · $CROW' },
+    { label: 'Token', value: 'Lion’s Share · $ROAR' },
     { label: 'Supply', value: '1,000,000,000' },
-    { label: 'Chain', value: 'Solana' },
+    { label: 'Chain', value: 'TBA' },
+    { label: 'Rewards', value: 'TBA' },
   ],
 }
+
+/** Shown in place of the address while `contractAddress` is null. */
+export const PLACEHOLDER_ADDRESS = '0x0000…0000'

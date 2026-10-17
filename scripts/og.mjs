@@ -3,13 +3,12 @@
  *
  *   npm run og                 (also runs as part of `npm run build`)
  *
- *   public/og.png                1200×630, mascot + headline in the site style
+ *   public/og.png                1200×630, the emblem + headline in the site style
  *   public/apple-touch-icon.png  180×180, from public/favicon.svg
  *
- * The mascot comes straight from src/crow-art.ts, so the image always matches
- * the site. Text is converted to outlines from the bundled fonts, which keeps
- * the result identical on every machine. Needs Node 22.18+ (it imports a .ts
- * file directly).
+ * The emblem comes straight from src/brand/symbol.svg, so the image always
+ * matches the site. Text is converted to outlines from the bundled fonts,
+ * which keeps the result identical on every machine. Needs Node 22.18+.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -32,7 +31,6 @@ try {
 async function generate() {
   const { Resvg } = await import('@resvg/resvg-js')
   const { default: opentype } = await import('opentype.js')
-  const { crowMarkup } = await import('../src/crow-art.ts')
 
   const font = (pkg, file) => {
     const buf = readFileSync(resolve(root, 'node_modules/@fontsource', pkg, 'files', file))
@@ -42,9 +40,14 @@ async function generate() {
   const mono = font('jetbrains-mono', 'jetbrains-mono-latin-500-normal.woff')
   const sans = font('instrument-sans', 'instrument-sans-latin-500-normal.woff')
 
-  const INK = '#EDEEF2'
-  const ACCENT = '#2F7BFF'
+  const INK = '#FFF4EC'
+  const ACCENT = '#E5232F'
+  const GOLD = '#C9A24A'
   const BG = '#020308'
+  const symbol = readFileSync(resolve(root, 'src/brand/symbol.svg'), 'utf8')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<svg[^>]*>|<\/svg>/g, '')
+    .replace(/currentColor/g, ACCENT)
 
   /**
    * Text as an outlined <path>. Glyphs are placed one by one (advance, kerning,
@@ -73,7 +76,7 @@ async function generate() {
   const og = `
   <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <defs>
-      <radialGradient id="g1" cx="76%" cy="62%" r="46%">
+      <radialGradient id="g1" cx="76%" cy="50%" r="46%">
         <stop offset="0" stop-color="${ACCENT}" stop-opacity=".42"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/>
       </radialGradient>
       <radialGradient id="g2" cx="8%" cy="110%" r="60%">
@@ -86,16 +89,16 @@ async function generate() {
     <rect x="24.5" y="24.5" width="${W - 49}" height="${H - 49}" fill="none" stroke="${INK}" stroke-opacity=".14"/>
 
     ${text(mono, '//////', 64, 88, 22, ACCENT, { tracking: -0.08 })}
-    ${text(mono, 'COUPON CROWS', 150, 88, 22, INK, { tracking: 0.06 })}
-    ${text(mono, '$CROW', W - 64, 88, 22, INK, { anchor: 'end', tracking: 0.06, opacity: 0.66 })}
+    ${text(mono, 'LION’S SHARE', 150, 88, 22, INK, { tracking: 0.06 })}
+    ${text(mono, '$ROAR', W - 64, 88, 22, GOLD, { anchor: 'end', tracking: 0.06 })}
 
-    ${text(anton, 'COUPON', 58, 318, 214, INK)}
-    ${text(anton, 'CROWS', 58, 508, 214, INK)}
+    ${text(anton, 'LION’S', 58, 318, 214, INK)}
+    ${text(anton, 'SHARE', 58, 508, 214, INK)}
 
-    <rect x="64" y="545" width="56" height="3" fill="${ACCENT}"/>
-    ${text(sans, 'Collecting shiny returns.', 138, 558, 34, INK)}
+    <rect x="64" y="545" width="56" height="3" fill="${GOLD}"/>
+    ${text(sans, 'Take the lion’s share.', 138, 558, 34, INK)}
 
-    <svg x="672" y="92" width="480" height="502" viewBox="0 0 440 460">${crowMarkup('og', true).replace(/<svg[^>]*>|<\/svg>/g, '')}</svg>
+    <svg x="700" y="105" width="440" height="440" viewBox="0 0 64 64">${symbol}</svg>
   </svg>`
 
   const png = (svg, opts = {}) => new Resvg(svg, { font: { loadSystemFonts: false }, ...opts }).render().asPng()

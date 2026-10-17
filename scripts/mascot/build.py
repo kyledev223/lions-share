@@ -1,32 +1,32 @@
 """
-Blender side of `npm run crow`. Run by scripts/crow.mjs, not by hand:
+Blender side of `npm run mascot`. Run by scripts/mascot.mjs, not by hand:
 
-  blender -b --factory-startup --python scripts/crow/build.py -- <src dir> <out.glb> <preview dir> <work dir>
+  blender -b --factory-startup --python scripts/mascot/build.py -- <src dir> <out.glb> <preview dir> <work dir>
 
 1. Takes the skinned mesh and rig from one Mixamo file (they all carry the
-   same Meshy mesh, skinned to the same 41-bone rig) and scales him to 1.9 m.
-2. Unwraps it with xatlas (scripts/crow/unwrap.py, cached in the preview dir).
+   same generated mesh, skinned to the same rig) and scales him to 1.9 m.
+2. Unwraps it with xatlas (scripts/mascot/unwrap.py, cached in the preview dir).
 3. Bakes the texture. The model comes white, so all colour comes from
-   crow-apose.png, the image the model was generated from:
+   lion-apose.png, the image the model was generated from:
      - The image is projected onto the bind pose from the front,
        orthographically. The projection is fitted to the model's front
        silhouette (scale and offset, by overlap), then a smooth warp lines
        up the limbs' edges row by row and column by column.
-     - Every vertex gets a region (feathers, beak, hands, suit, shirt, tie,
-       shoes) from its bone weights plus the colour the projection gives it,
+     - Every vertex gets a region (mane, fur, suit, shirt, tie, shoes) from
+       its bone weights plus the colour the projection gives it,
        where the front sees it. Unseen vertices (back, sides, under the
        arms) take the region of the nearest seen one across the surface.
      - Unseen areas are filled with region colours. Near the edge of what
        the front sees, they carry the photo's local shade and fade back to
        the region colour, so the seams blend.
      - Procedural detail in 3D (no UV seams): fine fabric noise on the suit,
-       feather streaks flowing back from the beak, a blue sheen in the
-       feathers, a fine grain on the hands.
+       strands radiating out through the mane with golden tips, a fine grain
+       on the fur of the face and hands.
      - A second texture holds ambient occlusion (R) and roughness (G) for
-       PBR shading: glossy shoes and beak, a silky tie, matte suit.
+       PBR shading: glossy shoes, a silky tie, matte suit and fur.
 4. Pulls the animation out of every Mixamo file as a named action.
 5. Exports one .glb (mesh once + all clips; PNG textures, compressed later
-   in scripts/crow.mjs) and renders front/side/back previews.
+   in scripts/mascot.mjs) and renders front/side/back previews.
 """
 import hashlib
 import math
@@ -40,32 +40,30 @@ from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 SRC, OUT_GLB, PREVIEW, WORK = (os.path.abspath(a) for a in argv[:4])
-TEX = int(os.environ.get("CROW_TEX", "2048"))
-HEIGHT = 1.9  # metres, crown to soles; the scenes are laid out for this
+TEX = int(os.environ.get("MASCOT_TEX", "2048"))
+HEIGHT = 1.9  # metres, head to soles; the scenes are laid out for this
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PYDEPS = os.path.join(ROOT, ".venv-assets", "blender-py")
 
-# Slug -> clip file (already renamed by crow.mjs). The first one found also provides the mesh.
+# Slug -> clip file (already renamed by mascot.mjs). The first one found also provides the mesh.
 CLIPS = ["idle", "sitting-idle", "clapping", "walking", "reaching", "looking-up", "toast", "typing", "looking-at-hand", "waving"]
 
 # Regions. Colours are sRGB; the fallback is half the named colour, half what the photo shows for that region.
-LABELS = ["feather", "beak", "hand", "suit", "shirt", "tie", "shoe"]
+LABELS = ["mane", "fur", "suit", "shirt", "tie", "shoe"]
 NAMED = {
-    "feather": (0.035, 0.043, 0.075),  # blue-black
-    "beak": (0.42, 0.42, 0.45),
-    "hand": (0.040, 0.046, 0.080),
+    "mane": (0.478, 0.310, 0.118),  # #7A4F1E, darker than the fur
+    "fur": (0.753, 0.541, 0.243),  # #C08A3E, golden tan: face and hands
     "suit": (0.200, 0.205, 0.220),  # charcoal
     "shirt": (0.930, 0.935, 0.950),
-    "tie": (0.184, 0.482, 1.000),  # #2F7BFF
+    "tie": (0.898, 0.137, 0.184),  # #E5232F
     "shoe": (0.020, 0.020, 0.024),
 }
-ROUGH = {"feather": 0.42, "beak": 0.34, "hand": 0.55, "suit": 0.82, "shirt": 0.62, "tie": 0.3, "shoe": 0.2}
-FEATHER, BEAK, HAND, SUIT, SHIRT, TIE, SHOE = range(len(LABELS))
-LABEL_TINT = np.array([(0.1, 0.2, 0.9), (0.7, 0.7, 0.7), (0.6, 0.1, 0.9), (0.35, 0.35, 0.35), (1, 1, 1), (0.1, 0.6, 1), (0.9, 0.5, 0.1)], np.float32)
-
+ROUGH = {"mane": 0.7, "fur": 0.75, "suit": 0.82, "shirt": 0.62, "tie": 0.3, "shoe": 0.2}
+MANE, FUR, SUIT, SHIRT, TIE, SHOE = range(len(LABELS))
+LABEL_TINT = np.array([(0.55, 0.3, 0.05), (1, 0.75, 0.3), (0.35, 0.35, 0.35), (1, 1, 1), (0.9, 0.1, 0.15), (0.1, 0.5, 0.9)], np.float32)
 
 def log(*a):
-    print("[crow]", *a, flush=True)
+    print("[mascot]", *a, flush=True)
 
 
 def smoothstep(a, b, x):
@@ -104,8 +102,8 @@ log("mesh and rig from", base_clip + ".fbx")
 bpy.ops.import_scene.fbx(filepath=clip_files[base_clip])
 arm = next(o for o in scene.objects if o.type == "ARMATURE")
 mesh = next(o for o in scene.objects if o.type == "MESH")
-arm.name = arm.data.name = "Crow"
-mesh.name = mesh.data.name = "CrowBody"
+arm.name = arm.data.name = "Lion"
+mesh.name = mesh.data.name = "LionBody"
 base_action = arm.animation_data.action if arm.animation_data else None
 arm.data.pose_position = "REST"
 bpy.context.view_layer.update()
@@ -146,7 +144,7 @@ def bind_positions():
     return co @ M[:3, :3].T + M[:3, 3]
 
 
-# Scale to 1.9 m (Meshy/Mixamo hand him over ~50 units tall). The armature keeps
+# Scale to 1.9 m (generated models and Mixamo hand him over ~50 units tall). The armature keeps
 # the scale as an object transform, so the clips' hip translations scale with it.
 P = bind_positions()
 k = HEIGHT / (P[:, 2].max() - P[:, 2].min())
@@ -176,7 +174,7 @@ if not os.path.exists(uv_cache):
     # xatlas's thresholds are absolute: at ~50 units tall it makes ~2k clean charts, at 1.9 it shatters into ~11k.
     np.savez(mesh_npz, V=(P * (50 / H)).astype(np.float32), F=F.astype(np.uint32))
     log("unwrapping with xatlas (a few minutes; cached afterwards)")
-    subprocess.run([sys.executable, "-I", os.path.join(ROOT, "scripts", "crow", "unwrap.py"), mesh_npz, uv_cache, PYDEPS, str(TEX)], check=True)
+    subprocess.run([sys.executable, "-I", os.path.join(ROOT, "scripts", "mascot", "unwrap.py"), mesh_npz, uv_cache, PYDEPS, str(TEX)], check=True)
 else:
     log("uv atlas from cache", os.path.basename(uv_cache))
 for f in os.listdir(PREVIEW):  # older atlases
@@ -196,7 +194,7 @@ vert_uv[F.ravel()] = loop_uv
 # Source image: figure mask, then bleed the figure's colours into the background
 # so samples right at the silhouette edge never pick up the grey backdrop.
 # ---------------------------------------------------------------------------
-src = bpy.data.images.load(os.path.join(SRC, "crow-apose.png"))
+src = bpy.data.images.load(os.path.join(SRC, "lion-apose.png"))
 W, Hh = src.size
 px = np.empty(W * Hh * 4, dtype=np.float32)
 src.pixels.foreach_get(px)
@@ -424,14 +422,14 @@ ov[fig_o & ~erode(fig_o, 1)] = (0.1, 1, 0.1)
 ov[warped & ~erode(warped, 1)] = (1, 0.15, 0.1)
 save_png("projection-fit.png", ov)
 
-if os.environ.get("CROW_STOP") == "fit":
+if os.environ.get("MASCOT_STOP") == "fit":
     raise SystemExit(0)
 
 # ---------------------------------------------------------------------------
 # Bakes: bind-pose position and normal per texel, visibility from the front,
 # ambient occlusion.
 # ---------------------------------------------------------------------------
-mat = bpy.data.materials.new("CrowSkin")
+mat = bpy.data.materials.new("LionSkin")
 mat.use_nodes = True
 nt = mat.node_tree
 nt.nodes.clear()
@@ -517,7 +515,7 @@ vis_map = bake("vis", "DIFFUSE", samples=16).mean(2)
 vis_map = (vis_map / max(1e-6, np.percentile(vis_map, 99.5))).ravel()
 bpy.data.objects.remove(sun)
 
-world.light_settings.distance = 0.12  # metres: creases, folds, under the collar and the beak
+world.light_settings.distance = 0.12  # metres: creases, folds, under the collar and the mane
 ao_map = bake("ao", "AO", samples=96).mean(2)
 ao_map = blur(ao_map, 1).ravel()
 
@@ -547,7 +545,7 @@ footw = Wsum("LeftFoot", "RightFoot", "LeftToeBase", "RightToeBase", "LeftToe_En
 rel = (P[:, 2] - zmin) / H
 
 # The collar line and the top of the shoes, read off the image: the lowest
-# row of feathers above the shirt, the highest row of shoe below the trousers.
+# row of fur above the shirt, the highest row of shoe below the trousers.
 def img_rel(row):
     return ((row - pd) / pc - zmin) / H
 
@@ -566,32 +564,40 @@ log("collar at %.3f of his height, shoes up to %.3f" % (collar_rel, shoe_rel))
 vl = vcol.mean(1)
 vs = vcol.max(1) - vcol.min(1)
 is_white = (vl > 0.55) & (vs < 0.12)
-is_blue = (vcol[:, 2] - vcol[:, 0] > 0.1) & (vcol[:, 2] > 0.25)
-is_grey = (vl > 0.3) & (vl <= 0.62) & (vs < 0.1)
+# The tie is a strong red; tan fur is warm too but much less red against green (r - g about 0.2).
+is_red = (vcol[:, 0] - vcol[:, 1] > 0.32) & (vcol[:, 0] > 0.45) & (vcol[:, 1] < 0.35)
+is_tan = (vcol[:, 0] > vcol[:, 1]) & (vcol[:, 1] > vcol[:, 2]) & (vcol[:, 0] - vcol[:, 2] > 0.15) & ~is_red
 
-# The beak: grey, and within reach of its tip (the head's most forward point).
+# The face: the front of the head, within reach of the muzzle (the head's most forward point).
+hb = bone_world("Head")
 head_pts = P[headw > 0.5]
-beak_tip = head_pts[np.argmin(head_pts[:, 1])]
-near_beak = (np.linalg.norm(P - beak_tip, axis=1) < 0.14) & (P[:, 1] < bone_world("Head")[1])
+muzzle = head_pts[np.argmin(head_pts[:, 1])]
+front_d = np.hypot(P[:, 0] - muzzle[0], P[:, 2] - (muzzle[2] + 0.02))
+face_geo = (headw > 0.3) & (P[:, 1] < hb[1]) & (front_d < 0.095)
 
 lab = np.full(nv, SUIT, np.int64)
-# Head and neck: feathers, the grey beak, and the shirt collar where it rises behind the feathers.
+# Head and neck: mane all round, golden fur on the face. Where the front sees tan,
+# the lighter half is fur and the darker half is mane.
 head = (headw > 0.5) & (rel > collar_rel - 0.02)
-lab[head] = FEATHER
-lab[head & is_grey & near_beak] = BEAK
-lab[(headw > 0.3) & (rel > collar_rel + 0.01)] = FEATHER
-lab[(headw > 0.3) & (rel > collar_rel + 0.01) & is_grey & (headw > 0.5) & near_beak] = BEAK
-# Body: shirt, tie (and the pocket square), suit.
+tan_head = seen & head & is_tan
+split = np.median(vl[tan_head]) if tan_head.sum() > 50 else 0.4
+lab[head] = MANE
+lab[head & face_geo] = FUR
+lab[head & seen & is_tan & (vl > split) & (front_d < 0.13)] = FUR
+lab[head & seen & is_tan & (vl < split * 0.9)] = MANE
+lab[(headw > 0.3) & (rel > collar_rel + 0.01) & (lab == SUIT)] = MANE
+# Body: shirt, tie (and the pocket square), suit; hands are fur.
 body = ~head
 lab[body & is_white] = SHIRT
-lab[body & is_blue & (rel > 0.5)] = TIE
-lab[(handw > 0.6) & ~is_white] = HAND
+lab[body & is_red & (rel > 0.5)] = TIE
+lab[(handw > 0.6) & ~is_white] = FUR
 lab[(footw > 0.3) & (rel < shoe_rel + 0.004)] = SHOE
 # Unseen vertices only keep the geometric part of that (hands, shoes, head); the colour part spreads from seen ones below.
 geo_only = np.full(nv, -1, np.int64)
-geo_only[headw > 0.5] = FEATHER
-geo_only[(headw > 0.3) & (rel > collar_rel + 0.01)] = FEATHER
-geo_only[handw > 0.6] = HAND
+geo_only[headw > 0.5] = MANE
+geo_only[(headw > 0.3) & (rel > collar_rel + 0.01)] = MANE
+geo_only[face_geo] = FUR
+geo_only[handw > 0.6] = FUR
 geo_only[(footw > 0.3) & (rel < shoe_rel + 0.004)] = SHOE
 
 # Mesh adjacency.
@@ -617,22 +623,23 @@ for _ in range(4000):
         break
     final[ea[m]] = final[eb[m]]
 final[final < 0] = SUIT
-override = (~seen) & (geo_only >= 0) & (final != geo_only) & ~((geo_only == FEATHER) & (final == BEAK))
+override = (~seen) & (geo_only >= 0) & (final != geo_only) & ~((geo_only == MANE) & (final == FUR) & (front_d < 0.13))
 # The shirt collar only shows as a thin band right at the collar line, not up the back of his head.
-collar_band = (geo_only == FEATHER) & (final == SHIRT) & (rel < collar_rel + 0.012)
+collar_band = (geo_only == MANE) & (final == SHIRT) & (rel < collar_rel + 0.012)
 override &= ~collar_band
 final[override] = geo_only[override]
-# The tie and the shirt front don't wrap round his back; behind the neck the
-# shirt shows only as a thin band of collar above the jacket's.
+# The tie and the shirt front don't wrap round his back, and nor does the face:
+# behind the head it is all mane.
 back = (~seen) & (P[:, 1] > np.median(P[:, 1]))
 final[back & np.isin(final, [TIE])] = SUIT
+final[back & (headw > 0.5) & (final == FUR)] = MANE
 armw = Wsum("LeftForeArm", "RightForeArm") + handw
 unseen_shirt = (~seen) & (final == SHIRT)
 final[unseen_shirt & (rel < collar_rel - 0.012) & (armw < 0.3)] = SUIT
-# Behind the neck his feathers hang over the collar, so no shirt shows there.
-final[unseen_shirt & (rel > collar_rel - 0.03) & (armw < 0.3)] = np.where(headw[unseen_shirt & (rel > collar_rel - 0.03) & (armw < 0.3)] > 0.2, FEATHER, SUIT)
+# Behind the neck the mane hangs over the collar, so no shirt shows there.
+nape = unseen_shirt & (rel > collar_rel - 0.03) & (armw < 0.3)
+final[nape] = np.where(headw[nape] > 0.2, MANE, SUIT)
 final[(~seen) & (final == SHOE) & (rel > shoe_rel + 0.008)] = SUIT
-final[(~seen) & (final == BEAK) & ~near_beak] = FEATHER
 for _ in range(2):
     cnt = np.zeros((nv, K))
     np.add.at(cnt, (ea, final[eb]), 1)
@@ -640,15 +647,6 @@ for _ in range(2):
     final = np.where(seen, final, cnt.argmax(1))
 final[(~seen) & (final == SHIRT) & (rel < collar_rel - 0.012) & (armw < 0.3)] = SUIT
 final[(~seen) & (final == SHOE) & (rel > shoe_rel + 0.008)] = SUIT
-# The beak by shape: everything on the head in front of where the grey the
-# front sees ends (its sides are in shadow in the photo, so colour alone misses them).
-gb = seen & (final == BEAK)
-if gb.sum() > 50:
-    beak_len = np.percentile(P[gb, 1] - beak_tip[1], 92)
-    beak_geo = (headw > 0.5) & (P[:, 1] - beak_tip[1] < beak_len) & (np.abs(P[:, 0] - beak_tip[0]) < 0.08)
-    final[beak_geo] = BEAK
-    final[(final == BEAK) & ~beak_geo] = FEATHER
-    log("beak: %.1f cm long" % (beak_len * 100))
 lab = final
 log("regions", {LABELS[i]: int((lab == i).sum()) for i in range(K)}, "seen %.0f%%" % (seen.mean() * 100))
 
@@ -703,23 +701,23 @@ ca = me.color_attributes.new("fill", "FLOAT_COLOR", "POINT")
 ca.data.foreach_set("color", np.concatenate([fill, np.ones((nv, 1))], 1).astype(np.float32).ravel())
 onehot = np.zeros((nv, 4))
 onehot[:, 0] = np.array([ROUGH[n] for n in LABELS])[lab]
-onehot[:, 1] = lab == FEATHER
+onehot[:, 1] = lab == MANE
 onehot[:, 2] = lab == SUIT
-onehot[:, 3] = lab == HAND
+onehot[:, 3] = lab == FUR
 pa_ = me.color_attributes.new("params", "FLOAT_COLOR", "POINT")
 pa_.data.foreach_set("color", onehot.astype(np.float32).ravel())
 labcol = me.color_attributes.new("labels", "FLOAT_COLOR", "POINT")
 labcol.data.foreach_set("color", np.concatenate([LABEL_TINT[lab], np.ones((nv, 1))], 1).astype(np.float32).ravel())
 
 fill_map = bake("fill", "EMIT", attr_fill.outputs["Color"]).reshape(-1, 3)
-# Roughness, feather mask, suit mask; then the hand mask and the label preview separately.
+# Roughness, mane mask, suit mask; then the fur mask and the label preview separately.
 par_map = bake("params", "EMIT", attr_par.outputs["Color"]).reshape(-1, 3)
 attr_par.layer_name = "labels"
 lab_map = bake("labels", "EMIT", attr_par.outputs["Color"])
-hand_attr = me.color_attributes.new("handmask", "FLOAT_COLOR", "POINT")
-hand_attr.data.foreach_set("color", np.repeat(onehot[:, 3:4], 4, 1).astype(np.float32).ravel())
-attr_par.layer_name = "handmask"
-hand_map = bake("handmask", "EMIT", attr_par.outputs["Color"])[..., 0].ravel()
+fur_attr = me.color_attributes.new("furmask", "FLOAT_COLOR", "POINT")
+fur_attr.data.foreach_set("color", np.repeat(onehot[:, 3:4], 4, 1).astype(np.float32).ravel())
+attr_par.layer_name = "furmask"
+fur_map = bake("furmask", "EMIT", attr_par.outputs["Color"])[..., 0].ravel()
 save_png("bake-regions.png", lab_map)
 
 
@@ -779,7 +777,7 @@ def vnoise(p, seed):
     return (c00 * (1 - fy) + c10 * fy) * (1 - fz) + (c01 * (1 - fy) + c11 * fy) * fz
 
 
-feather_m = par_map[:, 1]
+mane_m = par_map[:, 1]
 suit_m = par_map[:, 2]
 detail = fill_map.copy()
 
@@ -790,27 +788,25 @@ grain = 0.6 * vnoise(p * 900, 1) + 0.4 * vnoise(p * 260, 2) - 0.5
 twill = np.sin((p[:, 0] * 0.7 + p[:, 2]) * 2 * math.pi * 260) * 0.5
 detail[sel] *= (1 + (grain * 0.16 + twill * 0.035) * suit_m[sel])[:, None]
 
-# Feathers: streaks radiating back from the beak root, darker roots and a blue sheen on the tips.
-tip = P[headw > 0.5][np.argmin(P[headw > 0.5][:, 1])]
-hc = bone_world("Head")
-root_pt = hc + (tip - hc) * 0.55
-sel = feather_m > 0.02
+# Mane: strands radiating out from the face, darker at the roots, golden at the tips.
+root_pt = hb + (muzzle - hb) * 0.4
+sel = mane_m > 0.02
 p = pos_map[sel] - root_pt
 r = np.linalg.norm(p, axis=1) + 1e-6
 d = p / r[:, None]
-# Noise on the direction from the root (across the feathers) and slow along the distance (down them).
-streak = 0.5 * vnoise(d * 45 + r[:, None] * np.array([0, 0, 3.0]), 3) + 0.3 * vnoise(d * 110 + r[:, None] * np.array([0, 0, 7.0]), 4) + 0.2 * vnoise(d * 240 + r[:, None] * np.array([0, 0, 15.0]), 5)
-streak = smoothstep(0.2, 0.8, streak)
-sheen = np.array([0.012, 0.025, 0.07]) * (streak ** 3)[:, None]
-fm = feather_m[sel][:, None]
-detail[sel] = detail[sel] * (1 + (0.45 * streak - 0.2)[:, None] * fm) + sheen * fm
+# Noise on the direction from the root (across the strands) and slow along the distance (down them).
+strand = 0.5 * vnoise(d * 45 + r[:, None] * np.array([0, 0, 3.0]), 3) + 0.3 * vnoise(d * 110 + r[:, None] * np.array([0, 0, 7.0]), 4) + 0.2 * vnoise(d * 240 + r[:, None] * np.array([0, 0, 15.0]), 5)
+strand = smoothstep(0.2, 0.8, strand)
+tips = np.array([0.07, 0.045, 0.01]) * (strand ** 3)[:, None]
+mm = mane_m[sel][:, None]
+detail[sel] = detail[sel] * (1 + (0.4 * strand - 0.2)[:, None] * mm) + tips * mm
 
-# Hands: a fine scaly grain.
-sel = hand_map > 0.02
+# Fur on the face and hands: a fine grain with a few warm flecks.
+sel = fur_map > 0.02
 p = pos_map[sel]
-scales = vnoise(p * 700, 5) - 0.5
-detail[sel] *= (1 + scales * 0.35 * hand_map[sel])[:, None]
-detail[sel] += np.array([0.01, 0.02, 0.05]) * smoothstep(0.55, 0.9, vnoise(p * 180, 6))[:, None] * hand_map[sel][:, None]
+fine = vnoise(p * 700, 5) - 0.5
+detail[sel] *= (1 + fine * 0.22 * fur_map[sel])[:, None]
+detail[sel] += np.array([0.03, 0.02, 0.004]) * smoothstep(0.6, 0.9, vnoise(p * 180, 6))[:, None] * fur_map[sel][:, None]
 
 # ---------------------------------------------------------------------------
 # Compose: the photo where the front sees it, the filled colours elsewhere.
@@ -823,19 +819,18 @@ skin = detail * (1 - w[:, None]) + proj * w[:, None]
 skin = np.clip(skin, 0, 1).reshape(TEX, TEX, 3)
 
 rough = np.clip(par_map[:, 0] + (vnoise(pos_map * 300, 9) - 0.5) * 0.08, 0.05, 1)
-# Where the photo is bright on dark regions (highlights on shoes, beak), it was glossy.
 orm = np.stack([np.clip(0.25 + 0.75 * ao_map, 0, 1), rough, np.zeros_like(rough)], 1).reshape(TEX, TEX, 3)
 
-skin_path = os.path.join(WORK, "crow-skin.png")
-orm_path = os.path.join(WORK, "crow-orm.png")
+skin_path = os.path.join(WORK, "lion-skin.png")
+orm_path = os.path.join(WORK, "lion-orm.png")
 skin_img = save_png(skin_path, skin)
 save_png(orm_path, orm)
-save_png("crow-skin.png", skin)
-save_png("crow-orm.png", orm)
+save_png("lion-skin.png", skin)
+save_png("lion-orm.png", orm)
 save_png("bake-visibility.png", np.repeat(w.reshape(TEX, TEX, 1), 3, 2))
 log("texture written")
 
-if os.environ.get("CROW_STOP") == "texture":
+if os.environ.get("MASCOT_STOP") == "texture":
     raise SystemExit(0)
 
 # Final material: textured PBR. The site adds the hologram on top.
@@ -849,7 +844,7 @@ t.image = skin_img
 L(t.outputs["Color"], bsdf.inputs["Base Color"])
 bsdf.inputs["Roughness"].default_value = 0.6
 L(bsdf.outputs[0], o.inputs["Surface"])
-for name in ("fill", "params", "labels", "handmask"):
+for name in ("fill", "params", "labels", "furmask"):
     me.color_attributes.remove(me.color_attributes[name])
 
 # ---------------------------------------------------------------------------

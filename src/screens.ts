@@ -2,9 +2,10 @@ import gsap from 'gsap'
 
 /**
  * The twelve screens: names, URL hashes, the corner label, and the copy.
- * All of it is fiction: Corvus Black, the Hedgerow, the Perch and every bird
- * quoted are made up. `{{double braces}}` mark the phrase that gets the blue
- * highlight. The matching 3D stages are in gl/scenes.ts, in the same order.
+ * All of it is fiction: Leona Gold, Rex Mane, the Great Hall, the Watering
+ * Hole and every lion quoted are made up. `{{double braces}}` mark the
+ * phrase that gets the red highlight. The matching 3D stages are in
+ * gl/scenes.ts, in the same order.
  */
 export interface ScreenDef {
   /** URL hash and element id. */
@@ -13,7 +14,7 @@ export interface ScreenDef {
   name: string
   /** One mono line under the top-right label. */
   sub: string
-  /** Which side the copy sits on (the crow takes the other). */
+  /** Which side the copy sits on (the mascot takes the other). */
   side: 'left' | 'right'
   html: string
   /** A card that sits on the far side of the screen (the fictional posts). */
@@ -43,13 +44,13 @@ interface Post {
   counts: string[]
   quoted?: { name: string; handle: string; text: string }
 }
-/** A generic post card from "the Perch", the made-up network the birds use. */
+/** A generic post card from "the Watering Hole", the made-up network the pride uses. */
 const post = (p: Post) => `
   <article class="post" data-in aria-label="Post by ${esc(p.name)}">
     <header>
       <span class="post__avatar" style="--hue:${p.hue}" aria-hidden="true"></span>
       <span class="post__who"><b>${esc(p.name)}</b><small>${esc(p.handle)}</small></span>
-      <span class="post__net">THE PERCH</span>
+      <span class="post__net">THE WATERING HOLE</span>
     </header>
     <p class="post__text">${mark(p.text)}</p>
     ${
@@ -60,135 +61,136 @@ const post = (p: Post) => `
     <footer><time>${esc(p.date)}</time>${p.counts.map((c) => `<span>${esc(c)}</span>`).join('')}</footer>
   </article>`
 
-const CORVUS = { name: 'Corvus Black', handle: '@corvus', hue: 218 }
+const LEONA = { name: 'Leona Gold', handle: '@leona.gold', hue: 38 }
+const SHARE = { name: 'Lion’s Share', handle: '@lionsshare', hue: 356 }
 
 export const SCREENS: ScreenDef[] = [
   {
-    id: 'crow',
-    name: 'The crow',
-    sub: 'Coupon Crows. Paid on schedule.',
+    id: 'lion',
+    name: 'The lion',
+    sub: 'Lion’s Share. Take the lion’s share.',
     side: 'left',
     html: `
-      <p class="eyebrow hero__eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> THE WIRE · $CROW</p>
-      <h1 class="display hero__title" aria-label="Coupon Crow">${lines('COUPON', 'CROW')}</h1>`,
+      <p class="eyebrow hero__eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> THE THRONE ROOM · $ROAR</p>
+      <h1 class="display hero__title" aria-label="Lion’s Share">${lines('LION’S', 'SHARE')}</h1>`,
   },
   {
     id: 'name',
     name: 'Why the name',
-    sub: 'On the Hedgerow, a bird who waits for the payout is a coupon crow.',
+    sub: 'When the spoils are split, one cut is always bigger.',
     side: 'left',
     html: `
       ${eyebrow('WHY THE NAME')}
-      ${head('NAMED BY', 'CORVUS.')}
-      ${lede('On the Hedgerow, a bird who comes back for every payout is called a {{coupon crow}}.')}
-      ${body('Corvus Black, who runs the Hedgerow Exchange, coined it for the members who collect small, regular payouts and never miss one. Not a product, not a tier: a flock. He has said it on stage, on the Perch and on every quarterly call. Every flock needs a mascot.')}
-      ${note('NOBODY HAD DRAWN THE CROW. SO WE DID.')}`,
+      ${head('THE BIGGEST', 'SLICE.')}
+      ${lede('When the hunt is shared out, one cut is always bigger. Out here, we call it {{the lion’s share}}.')}
+      ${body('Leona Gold, eldest of the pride, says it at every feast: whoever turns up gets fed, and whoever stays gets the lion’s share. It isn’t a product and it isn’t a club. It’s a pride, and a pride needs a face it can put on a flag.')}
+      ${note('THE PRIDE HAD A NAME AND NO FACE. NOW IT HAS A MANE.')}`,
   },
   {
     id: 'stage',
     name: 'On stage',
-    sub: 'On stage at Roost Live, 4 April. Where the name took off.',
+    sub: 'Opening night at the Great Hall. The room answered back.',
     side: 'right',
     html: `
-      ${eyebrow('MENTION · ON STAGE · ROOST LIVE, 4 APRIL')}
-      ${head('ANY COUPON', 'CROWS?')}
-      ${quote('“Show of wings: any coupon crows in tonight? There they are. … From next month, {{every payout lands on the day it’s due}}.”', 'CORVUS BLACK, ON STAGE')}
-      ${note('WARMING UP THE ROOM, THE HOST: “IF YOU DON’T KNOW WHAT A COUPON CROW IS, YOU WILL BY THE END.”')}`,
+      ${eyebrow('LIVE · THE GREAT HALL · OPENING NIGHT')}
+      ${head('ANY LIONS', 'IN HERE?')}
+      ${quote('“Big room tonight. Let me hear it: who came here for {{the lion’s share}}? … Thought so. Nobody leaves this hall hungry.”', 'REX MANE, MASTER OF CEREMONIES')}
+      ${note('HE WALKED ON FOUR MINUTES LATE AND DIDN’T APOLOGISE. “KINGS DON’T QUEUE,” HE TOLD THE FRONT ROW.')}`,
   },
   {
-    id: 'post',
-    name: 'The post',
-    sub: 'A week early, and the crows got named again.',
+    id: 'hunt',
+    name: 'The hunt',
+    sub: 'Every candle on the horizon is a day on the savanna.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · THE PERCH · 14 APRIL')}
-      ${head('OUR COUPON', 'CROWS.')}
-      ${lede('Launching Early Coupons, paid a full week before anywhere else on the Hedgerow, Corvus signed off with the birds who’d been waiting.')}
+      ${eyebrow('THE HUNT · THE WATERING HOLE · DAWN')}
+      ${head('ON THE', 'HUNT.')}
+      ${lede('A lion doesn’t chase every candle on the horizon. He picks one, waits in the long grass, then walks.')}
       ${post({
-        ...CORVUS,
-        text: '“Early Coupons are live: payouts land in your nest a full week before the rest of the hedgerow. No more waiting on the wire. {{Our coupon crows earned this one.}}”',
-        date: '9:41 AM · 14 APR',
-        counts: ['2.1K CAWS', '412 ECHOES', '218 REPLIES'],
+        ...LEONA,
+        text: 'Lesson from an old hunter: lie low, keep your eyes on the horizon, {{move when it counts}}. Chasing everything is how you end up chasing nothing. The pride eats tonight.',
+        date: '6:02 AM · DAY ONE',
+        counts: ['3.4K ROARS', '906 RE-ROARS', '311 REPLIES'],
       })}`,
   },
   {
-    id: 'record',
-    name: 'On the record',
-    sub: 'On the record: the quarterly call, then the annual roost.',
+    id: 'pride',
+    name: 'The pride',
+    sub: 'One lion is a rumour. A pride is a weather system.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · Q1 FLOCK CALL, 29 APRIL · ANNUAL ROOST, 3 JUNE')}
-      ${head('WE CALL', 'THEM COUPON', 'CROWS.')}
-      ${quote('“The birds who come back for every payout? Around here we call them {{coupon crows}}.”', 'CORVUS BLACK, Q1 FLOCK CALL')}
-      ${quote('“Plenty of our members never miss a payout. I call them {{Coupon Crows}}, and we build for them first.”', 'CORVUS BLACK, ANNUAL ROOST, 3 JUNE')}`,
+      ${eyebrow('THE PRIDE · OVERHEARD AT THE WATERING HOLE')}
+      ${head('STRENGTH', 'IN', 'NUMBERS.')}
+      ${quote('“One lion is a rumour. Forty lions is {{a pride}}. Forty thousand is a weather system.”', 'OLD SAM TUFT, WHO HAS SEEN A FEW SEASONS')}
+      ${quote('“We don’t count members. We count {{who turns up for dinner}}.”', 'ADA PRIDEWELL, KEEPER OF THE DEN')}`,
   },
   {
     id: 'foryou',
     name: 'For you',
-    sub: 'The Hedgerow’s own account, straight to the flock.',
+    sub: 'Not for the tourists. For the ones who stayed.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · @HEDGEROW ON THE PERCH · 22 AUGUST')}
-      ${head('THIS ONE’S', 'FOR YOU.')}
-      ${lede('Not Corvus this time: the Hedgerow’s own account, talking straight to the flock.')}
-      ${quote('“This one goes out to every {{coupon crow}} on the wire.”', '@HEDGEROW ON THE PERCH')}`,
+      ${eyebrow('A NOTE FROM THE ROCK · FOR YOU')}
+      ${head('THIS ROAR’S', 'FOR YOU.')}
+      ${lede('Not for the tourists, not for the drive-by safari. For the cub who showed up on day one and never left the grass.')}
+      ${quote('“If you’re reading this, {{you’re already part of the pride}}. Walk like it.”', 'LEONA GOLD, PRIDE ELDER')}`,
   },
   {
-    id: 'onchain',
-    name: 'On-chain',
-    sub: 'The crows went on-chain. So did their mascot.',
+    id: 'summit',
+    name: 'The summit',
+    sub: 'One rock, one beam of light, one very large lion.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · THE PERCH · 17 SEPTEMBER')}
-      ${head('ON-CHAIN', 'COUPON', 'CROWS.')}
-      ${lede('Rook Ledger, who runs payouts at the Hedgerow, announced that on-chain coupons now settle the moment they’re due, not days later. Corvus quoted it and named the birds who’d been waiting. The crows went on-chain, and so did their mascot.')}`,
+      ${eyebrow('THE SUMMIT · HIGH NOON')}
+      ${head('TOP OF', 'THE', 'ROCK.')}
+      ${lede('Every pride keeps a high rock for the big announcements. Marlo Kopje, who runs the den’s treasury, climbed it to say the share now lands {{the moment the hunt is done}}. Leona quoted him and added a line of her own.')}`,
     aside: post({
-      ...CORVUS,
-      text: 'payouts now settle on the minute for our {{on-chain coupon crows}} ✦',
+      ...LEONA,
+      text: 'no more waiting at the edge of the clearing. {{the share is served hot}} ✦',
       quoted: {
-        name: 'Rook Ledger',
-        handle: '@rook.ledger',
-        text: 'On-chain coupons just got an upgrade. Payouts now settle automatically on the due date instead of trickling in days later. Same coupon, no waiting on the wire.',
+        name: 'Marlo Kopje',
+        handle: '@marlo.kopje',
+        text: 'Big one from the rock today: from this season, every share is split and served the moment the hunt ends. No queue, no leftovers, no hyenas.',
       },
-      date: '4:12 PM · 17 SEP',
-      counts: ['1.9K CAWS', '384 REPLIES'],
+      date: '12:00 PM · HIGH NOON',
+      counts: ['2.8K ROARS', '540 REPLIES'],
     }),
   },
   {
     id: 'cheers',
     name: 'Cheers',
-    sub: 'A toast to the flock, under the fireworks.',
+    sub: 'Something golden in the glass. Fireworks overhead.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · @HEDGEROW ON THE PERCH · 21 SEPTEMBER')}
-      ${head('CHEERS TO', 'THE COUPON', 'CROWS.')}
-      ${lede('Launching its payout tracker, the Hedgerow’s own account raised a glass to the flock: “{{cheers to the coupon crows}}.”')}`,
+      ${eyebrow('THE FEAST · AFTER DARK')}
+      ${head('A TOAST', 'TO THE', 'PRIDE.')}
+      ${lede('Raise something golden. The hunt went well, the fireworks are paid for, and {{nobody is splitting the bill}}.')}`,
   },
   {
     id: 'ask',
-    name: 'Ask the crow',
-    sub: 'Roost Summit. Corvus answered live.',
+    name: 'Ask the lion',
+    sub: 'Thirty minutes on the rock. No question too small.',
     side: 'left',
     html: `
-      ${eyebrow('MENTION · @CORVUS ON THE PERCH · 12 OCTOBER')}
-      ${head('ASK THE', 'CROW.')}
-      ${lede('After Roost Summit, Corvus opened the floor. For thirty minutes he answered every question that came in, as long as it was about coins.')}`,
+      ${eyebrow('OFFICE HOURS · @LIONSSHARE ON THE WATERING HOLE')}
+      ${head('ASK THE', 'LION.')}
+      ${lede('Questions go in, roars come out. For half an hour he answers everything, as long as it’s about the hunt, the mane or the suit.')}`,
     aside: post({
-      ...CORVUS,
-      text: 'Big week at Roost Summit. Drop your questions below and I’ll answer live for the next 30 minutes. {{Ask the crow.}}',
-      date: '1:08 PM · 12 OCT',
-      counts: ['2.4K CAWS', '1.6K REPLIES'],
+      ...SHARE,
+      text: 'On the rock for the next 30 minutes. Ask me anything. {{No question is too small. Most answers are roars.}}',
+      date: '7:30 PM · OFFICE HOURS',
+      counts: ['4.1K ROARS', '2.2K REPLIES'],
     }),
   },
   {
     id: 'token',
     name: 'The token',
-    sub: '$CROW. The community token of the flock, live on Solana.',
+    sub: '$ROAR. The community token of the pride. Chain to be announced.',
     side: 'left',
     html: `
-      ${eyebrow('THE TOKEN · LIVE ON SOLANA')}
-      ${head('HOLD $CROW.', 'COLLECT SHINY', 'THINGS.')}
-      ${lede('$CROW is a community token: a mascot, a running joke about patience, and a flock that likes things that glitter.')}
+      ${eyebrow('THE TOKEN · CHAIN TBA')}
+      ${head('HOLD $ROAR.', 'TAKE YOUR', 'SHARE.')}
+      ${lede('$ROAR is a community token: a mascot, a mane, and a pride that thinks the biggest slice belongs to whoever stays at the table. Nothing to buy yet. These buttons wake up when there is.')}
       <div class="actions" data-in>
         <span class="slot" data-buy="gold"></span>
         <span class="slot" data-ca="named"></span>
@@ -198,42 +200,43 @@ export const SCREENS: ScreenDef[] = [
   {
     id: 'memes',
     name: 'The memes',
-    sub: 'The memes. Drag them round, open one, drop yours.',
+    sub: 'The memes. Spin them, open one, bring your own.',
     side: 'left',
     html: `
       ${eyebrow('THE MEMES')}
-      ${head('CROWS AT', 'WORK.')}
-      ${lede('Every frame around him is a meme from the flock. Made one? Drop it on the wire.')}
+      ${head('THE PRIDE', 'PROVIDES.')}
+      ${lede('Every frame around him came from the pride. Made a better one? Bring it back to the den.')}
       <button class="ringkeys" type="button" id="ringKeys" aria-roledescription="carousel"
         aria-label="Meme carousel. Left and right arrow keys turn it one frame. Enter opens the meme at the front." data-in>
         <span aria-hidden="true">⟵ ⟶</span> Drag to turn the memes · click one to open it
       </button>
       <div class="actions" data-in>
-        <a class="btn btn--gold" data-href="community" href="#">Drop a meme in the community ↗</a>
+        <a class="btn btn--gold" data-href="community" href="#">Bring a meme to the den ↗</a>
       </div>`,
   },
   {
-    id: 'flock',
-    name: 'Join the flock',
-    sub: 'Join the community. Follow the wire.',
+    id: 'join',
+    name: 'Join the pride',
+    sub: 'Pull up a rock. Keep an eye on the horizon.',
     side: 'left',
     html: `
-      ${eyebrow('JOIN THE FLOCK')}
-      ${head('JOIN THE', 'FLOCK.')}
-      ${lede('The crows gather on the wire. Join the community and follow along for every coin, every meme and every caw.')}
+      ${eyebrow('JOIN THE PRIDE')}
+      ${head('JOIN THE', 'PRIDE.')}
+      ${lede('The pride gathers at dusk. Pull up a rock, say hello, and keep one eye on the horizon.')}
       <div class="actions" data-in>
-        <a class="btn btn--gold" data-href="community" href="#">Join the community ↗</a>
-        <a class="btn btn--ghost" data-href="follow" href="#">Follow the flock ↗</a>
+        <a class="btn btn--gold" data-href="community" href="#">Join the pride ↗</a>
+        <a class="btn btn--ghost" data-href="follow" href="#">Follow the roar ↗</a>
       </div>
       <div class="cabox" data-in>
         <span class="cabox__label">Contract address</span>
-        <span class="slot" data-ca="full"></span>
+        <span class="slot" data-ca="full" data-tag></span>
       </div>
       <div class="actions" data-in>
         <span class="slot" data-buy="ghost"></span>
         <span class="slot" data-explorer></span>
       </div>
-      <dl class="stats" id="stats" data-in></dl>`,
+      <dl class="stats" id="stats" data-in></dl>
+      <p class="disclaimer" data-in>A fictional community art project. Lion’s Share, Leona Gold, Rex Mane, Marlo Kopje, the Great Hall, the Watering Hole and every lion quoted here are made up. Not affiliated with any company or person. Nothing here is financial advice.</p>`,
   },
 ]
 
