@@ -515,13 +515,13 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
   const deep = new THREE.Color(fx.palette.deep).convertLinearToSRGB()
   function measureWash(i: number) {
     if (i < 0) return
-    // A screen can name its own (display colour). It's brought to a set brightness by luminance, not
-    // its brightest channel, so a deep red lifts the blacks as much as a measured, more even hue does.
+    // A screen can name its own (display colour). It is brought to the luminance a measured wash has (~0.23), not by
+    // its brightest channel, so a saturated red or gold lifts the blacks as much as a measured, more even hue does.
     const named = stages[i].transition?.wash
     if (named) {
       const c = washes[i].set(named).convertLinearToSRGB()
       const luma = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
-      c.multiplyScalar(Math.min(0.15 / Math.max(luma, 1e-3), 0.7 / Math.max(c.r, c.g, c.b, 1e-3)))
+      c.multiplyScalar(Math.min(0.23 / Math.max(luma, 1e-3), 0.8 / Math.max(c.r, c.g, c.b, 1e-3)))
       return
     }
     renderer.setRenderTarget(washRT)
