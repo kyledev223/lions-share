@@ -9,6 +9,7 @@ import { createAsk } from './ask'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'
 import { initCursor } from './cursor'
+import { createDisclaimerSheet } from './disclaimer-sheet'
 import { loadMascot } from './gl/mascot'
 import { createEngine, type Engine } from './gl/engine'
 import { createEntry } from './gl/entry'
@@ -44,6 +45,8 @@ const ask = createAsk(views.find((v) => v.def.id === 'ask')!.el, reduced)
 const canvas = document.getElementById('gl') as HTMLCanvasElement
 const site = document.getElementById('site')!
 let nav: Nav
+// Screen 12's "Read more" (phones): screen changes wait while the sheet is open.
+createDisclaimerSheet({ onOpen: () => nav?.setPaused(true), onClose: () => nav?.setPaused(false) })
 /** Loader progress: the mascot's download is most of the wait; the last stretch is building and warming the scenes. */
 let mascotLoaded = 0
 let siteReady = false

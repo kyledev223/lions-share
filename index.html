@@ -6,7 +6,7 @@
     <title>Lion’s Share ($ROAR) · Hold $ROAR. Take the lion’s share.</title>
     <meta
       name="description"
-      content="Hold $ROAR, be holding at the snapshot, and receive a share of the community airdrops. A meme token with no intrinsic value; airdrops are discretionary and may change or stop. Not financial advice."
+      content="Hold $ROAR, be holding at the snapshot, and receive a share of the community airdrops. A meme token with no intrinsic value; airdrops are discretionary and may change or stop. Not financial advice. An independent community project, not affiliated with any exchange, launchpad or company."
     />
     <meta name="theme-color" content="#020308" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -31,7 +31,7 @@
     <meta property="og:title" content="Lion’s Share ($ROAR) · Hold $ROAR. Take the lion’s share." />
     <meta
       property="og:description"
-      content="Hold $ROAR. Take the lion’s share. Holders at each snapshot receive a share of the community airdrops. Meme token; airdrops are discretionary. Not financial advice."
+      content="Hold $ROAR. Take the lion’s share. Holders at each snapshot receive a share of the community airdrops. Meme token; airdrops are discretionary. Not financial advice. Independent; not affiliated with any exchange, launchpad or company."
     />
     <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
     <meta property="og:image:width" content="1200" />
@@ -44,7 +44,7 @@
     <meta name="twitter:title" content="Lion’s Share ($ROAR) · Hold $ROAR. Take the lion’s share." />
     <meta
       name="twitter:description"
-      content="Hold $ROAR. Take the lion’s share. Holders at each snapshot receive a share of the community airdrops. Meme token; airdrops are discretionary. Not financial advice."
+      content="Hold $ROAR. Take the lion’s share. Holders at each snapshot receive a share of the community airdrops. Meme token; airdrops are discretionary. Not financial advice. Independent; not affiliated with any exchange, launchpad or company."
     />
     <meta name="twitter:image" content="%VITE_SITE_URL%/og.png" />
   </head>
@@ -127,6 +127,15 @@
           <span id="lightboxCaption"></span>
           <button class="btn btn--ghost" id="lightboxNext" type="button" aria-label="Next meme">⟶</button>
         </div>
+      </div>
+    </dialog>
+
+    <!-- Phones: screen 12's "Read more" opens the full disclaimer here (filled from config.ts). -->
+    <dialog class="sheet" id="disclaimerSheet" aria-labelledby="disclaimerSheetTitle">
+      <div class="sheet__inner">
+        <p class="sheet__title" id="disclaimerSheetTitle">Disclaimer</p>
+        <p class="sheet__text" id="disclaimerSheetText"></p>
+        <button class="btn btn--ghost sheet__close" id="disclaimerSheetClose" type="button">Close ✕</button>
       </div>
     </dialog>
 

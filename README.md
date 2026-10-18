@@ -96,6 +96,7 @@ src/
     watering-hole.ts    screen 09: the pool (points, ripples, edge glow, mist, reflection), the question bubbles, his glance
   cursor.ts             ring + dot cursor (shows DRAG over the meme ring)
   lightbox.ts           meme viewer
+  disclaimer-sheet.ts   screen 12 on phones: the "Read more" sheet with the full disclaimer
   ask.ts                screen 09's live Q&A card and question box
   content/lion-answers.ts  the lion's airdrop FAQ answers, the topics they match, the profanity filter, the questions that rise on their own
   config.ts             contract address, links, token facts, the airdrop block, the disclaimer
@@ -200,6 +201,30 @@ airdrop: {
 
 While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 07 (the reserve wallet), 10, 11 (the meme link) and 12. Any airdrop figure left `null` reads "TBA"; an empty `history` shows "The first drop is coming."
 
+**Units** (also in the comments in `src/config.ts`):
+
+| Field | Unit | Example | Shown as |
+|---|---|---|---|
+| `supply` | whole tokens | `1_000_000_000` | 1,000,000,000 |
+| `allocationPercent` | percent of total supply | `10` | 10% of supply |
+| `cadence` | a phrase completing "Snapshots are taken…" | `'monthly'` | Snapshots are taken monthly. |
+| `nextSnapshot` | ISO 8601 date-time, shown in UTC | `'2026-11-01T16:00:00Z'` | 1 NOV 2026 · 16:00 UTC, plus a live countdown |
+| `minHolding` | whole $ROAR tokens | `100000` | 100,000 $ROAR |
+| `perWalletCap` | percent of a single round | `1` | 1% of each round |
+| `history[].date` | ISO date | `'2026-11-01'` | 1 NOV 2026 |
+| `history[].totalSent` | whole `rewardToken` tokens | `5000000` | 5,000,000 $ROAR |
+| `history[].wallets` | count of wallets paid | `812` | 812 wallets |
+
+## Before each airdrop round
+
+The site promises three things, so every round has to keep them: each round's snapshot, eligible list and transactions are published; screen 05 shows the current rules; and screen 08 lists every round. Work through this in order:
+
+- [ ] **Announce the snapshot.** Set `airdrop.nextSnapshot` in `src/config.ts` (and `cadence`, `minHolding`, `perWalletCap`, `exclusions` if any of them changed, so screen 05 stays current). Deploy, then check the countdown on screen 04.
+- [ ] **Take the snapshot** at that moment: every holder's balance, with the excluded wallets (liquidity pool, exchanges, burn address, team wallets) removed.
+- [ ] **Publish the eligible list and amounts** (each wallet's balance and share, with the cap applied) before anything is sent.
+- [ ] **Send** the drop from the reserve wallet (`airdrop.reserveWallet`).
+- [ ] **Record the round.** Add `{ date, round, totalSent, wallets, txUrl }` to `airdrop.history` with the explorer link to the transactions. Set `nextSnapshot` to the next date, or back to `null` if none is set yet. Deploy, then check screens 04 and 08.
+
 ## Test on a phone
 
 1. Put the phone on the **same Wi-Fi** as this computer.
@@ -247,4 +272,6 @@ The share card needs an absolute image URL. The build picks up the site's addres
 
 ## Disclaimer
 
-The site's disclaimer is `DISCLAIMER` in `src/config.ts` (shown at the foot of screen 12): $ROAR is a meme token with no intrinsic value and no expectation of financial return; airdrops are discretionary and may change or stop; crypto is volatile and you can lose what you put in; nothing here is financial advice; check your local laws.
+The site's disclaimer is `DISCLAIMER` in `src/config.ts`: $ROAR is a meme token with no intrinsic value and no expectation of financial return; airdrops are discretionary and may change or stop; crypto is volatile and you can lose what you put in; nothing here is financial advice; check your local laws; Lion's Share is an independent community project, not affiliated with or endorsed by any exchange, launchpad or company.
+
+Desktop shows it in full at the foot of screen 12. Phones show `SHORT_DISCLAIMER` ("Meme token. No expected returns. Not financial advice.") under the safety notice, with "Read more" opening the full text in a bottom sheet (`src/disclaimer-sheet.ts`). The meta descriptions in `index.html` carry a shortened version: when the disclaimer changes, update them too.

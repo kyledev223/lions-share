@@ -1,7 +1,7 @@
 import gsap from 'gsap'
 import { A, allocationText, cadenceText, capText, fmtDate, fmtNumber, minHoldingText, nextSnapshotText, tokenFacts } from './airdrop'
 import { MAX_QUESTION } from './ask'
-import { config, DISCLAIMER } from './config'
+import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
 
 /**
@@ -316,6 +316,7 @@ export const SCREENS: ScreenDef[] = [
         <span class="safety__label">Stay safe</span>
         <p>We’ll never DM you, ask for your seed phrase, or ask you to connect a wallet to receive an airdrop. Airdrops are sent automatically. Only trust links on this site.</p>
       </div>
+      <p class="disclaimer-short" data-in>${esc(SHORT_DISCLAIMER)} <button class="disclaimer-short__more" type="button" data-disclaimer-open aria-haspopup="dialog">Read more</button></p>
       <div class="cabox" data-in>
         <span class="cabox__label">Contract address</span>
         <span class="slot" data-ca="full" data-tag></span>
