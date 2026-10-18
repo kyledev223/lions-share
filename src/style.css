@@ -521,7 +521,10 @@ mark {
 
 /* While the loader and the entry are up, the site chrome waits its turn. */
 html.is-booting #site,
-html.is-entry #site {
+html.is-entry #site,
+/* (the active screen sets its own visibility, so it needs telling too: its dark wedge would show through the enter flash) */
+html.is-booting #site .screen.is-active,
+html.is-entry #site .screen.is-active {
   visibility: hidden;
 }
 html:not(.is-reduced) [data-after-enter] {

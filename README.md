@@ -60,7 +60,7 @@ Blender is found via `$BLENDER`, then `PATH`, then the usual install folders (an
 
 **Pose layers** (`mascot.setOverlay`) fade in and out independently, so one can release while the next settles in (05 → 06 → 07 hands over from the podium to the reach to nothing). The mascot resets bones the clips don't animate before the layers run each frame, so nothing they write accumulates.
 
-**Walking toward you (12)** reuses the in-place walk at 0.85× (`speed` on the stage's mascot spot), turned to face the camera and then ~12° more toward screen left. A fourth layer, `src/gl/stride.ts`, keeps it composed: each arm bone eases 30% of the way toward its average over the clip (so the swing is 30% smaller around the same pose), the chest lifts and the shoulders draw back a touch, and the head turns to the camera with the chin kept level. The gaze correction is smoothed over ~0.9s, so it takes out only the average error and leaves the walk's own head motion on top. The floor is a runway of light rows that scroll the opposite way to his facing at his planted foot's speed (0.99 m/s × 0.85 × his current size), so his feet stay put on the rows; they fade in under the camera and out toward the horizon. He grows 3% over 10s and eases back over the next 10s (a seamless loop), and the floor speed scales with him. A red pool follows his hips. The greeting clip is still in lion.glb, just not on any screen.
+**Walking toward you (12)** reuses the in-place walk at 0.85× (`speed` on the stage's mascot spot), turned to walk straight at the camera, which sits at hip height about 5 m back and shows him head to shoes. A fourth layer, `src/gl/stride.ts`, keeps it composed: each arm bone eases 30% of the way toward its average over the clip (so the swing is 30% smaller around the same pose), the chest lifts and the shoulders draw back a touch, and the head turns to the camera with the chin kept level. The gaze correction is smoothed over ~0.9s, so it takes out only the average error and leaves the walk's own head motion on top. The floor is a runway of light rows that scroll the opposite way to his facing at his planted foot's speed (0.99 m/s × 0.85 × his current size), so his feet stay put on the rows; they fade in under the camera and out toward the horizon. He grows 3% over 10s and eases back over the next 10s (a seamless loop), and the floor speed scales with him. A red pool follows his hips. The greeting clip is still in lion.glb, just not on any screen.
 
 **Props** ride on his hand bones (`onHand` in `src/gl/scenes.ts`): the coupe's stem across his left fist (08), the phone flat in his left palm (09), the coin standing upright on his open right palm (10, placed by `coinPoint` in `src/gl/trophy.ts`). Mixamo hand bones point down the fingers along +Y with the palm facing +Z, so offsets are given in those axes. The mic stand on 03 stands on the floor beside him.
 
@@ -127,7 +127,7 @@ public/assets/lion/     lion.glb, written by npm run mascot
 | 09 | `#ask` | Ask the lion: the Watering Hole | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
 | 10 | `#token` | The token | idle, held still with the coin standing on his open right palm, held up at shoulder height; looks at it, now and then at you | drifting gold coins, the emblem (up and to the right, so the coin reads against dark space) |
 | 11 | `#memes` | The memes | idle | the meme ring around him, gold dust on the floor |
-| 12 | `#join` | Join the pride | walking toward the viewer at 0.85×, angled ~12° to screen left; chin level, eyes on the camera; seen from hip height, knees up | a runway of white and gold light rows (a few red sparks) scrolling at his stride, a red pool under his feet, the emblem far behind and dimmed |
+| 12 | `#join` | Join the pride | walking straight toward the viewer at 0.85×; chin level, eyes on the camera; seen whole, from hip height | a runway of white and gold light rows (a few red sparks) scrolling at his stride, a red pool under his feet, the emblem far behind and dimmed |
 
 The hologram is the same on the lion and the placeholder: faint bands drifting upward, a thin red rim, legs fading into the floor glow, a flicker every few seconds; he scans in from the top on arrival and dissolves on the way out.
 
@@ -149,7 +149,7 @@ He stands on a rock ledge above a dark pool of points (`src/gl/watering-hole.ts`
 - **Transitions.** The outgoing points scatter and the mascot dissolves, with a short glitch and colour burst; the next screen assembles and he scans back in.
 - **Keys.** Arrow down/up, Page Down/Up, Space / Shift+Space step one screen; Home and End go to the ends.
 - **Rail.** Twelve ticks on the right edge; hover for a name, click to jump. A slim strip on phones.
-- **Links.** Every screen has a hash (`…/#hunt`), and Back/Forward move between screens.
+- **Links.** Every screen has a hash (`…/#hunt`), and Back/Forward move between screens. Enter always starts on 01 The Throne; a hash in the URL at load is dropped.
 
 ## Tuning the look: `src/fx-config.ts`
 

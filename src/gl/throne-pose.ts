@@ -16,8 +16,8 @@ export const THRONE = {
   seatHalf: 0.33,
   /** The backrest's plane. */
   back: -0.255,
-  /** Half the backrest's width. */
-  backHalf: 0.4,
+  /** Half the backrest's width (its posts stand here, floor to crest). */
+  backHalf: 0.5,
   /** Armrest centre lines: x = ±armX, top at armY, running from the backrest to armFront. */
   armX: 0.27,
   armY: 0.752,

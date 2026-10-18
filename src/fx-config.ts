@@ -58,7 +58,7 @@ export const fx = {
   /** Slow handheld "breathing" of the camera. */
   breathing: { amount: 0.03, speed: 0.18 },
 
-  /** The mascot: PBR shading (once lion.glb exists), with the hologram on top. */
+  /** The mascot: PBR shading (once lion.glb exists), projected as a red hologram on top. */
   holo: {
     /** Key light (from the camera's upper left), fill (right), back light (outline). */
     key: 1.6,
@@ -71,22 +71,36 @@ export const fx = {
     /** Brightest his lit surface gets (linear). Below the bloom threshold, so his face and shirt never glow. */
     ceiling: 0.58,
     /** Red sheen on the darkest parts of the mane toward their edges. */
-    sheen: 0,
-    /** Red rim glow strength, and how tight it hugs the silhouette (higher = tighter). */
-    rim: 0.18,
-    rimPower: 8,
-    /** Horizontal scan bands per metre of height. */
-    bands: 46,
-    /** Band darkness, 0–1. */
-    bandDepth: 0.06,
+    sheen: 0.2,
+    /**
+     * How far his own colours give way to projected red light, 0–1 (1 = one
+     * colour, 0 = the photographic lion). The ramp runs deep red in the
+     * shadows, brand red in the mid-tones, pale pink in the highlights; each
+     * stop's brightness is set here.
+     */
+    tint: 0.72,
+    tintLow: 0.3,
+    tintMid: 0.3,
+    tintHigh: 0.62,
+    /** Opacity of his darkest parts, 0–1 (lit parts and the rim go fully solid). */
+    alpha: 0.38,
+    /** How see-through the gaps between scan lines are, 0–1. */
+    gap: 0.55,
+    /** Red rim glow strength, and how tight it hugs the silhouette (higher = tighter). Above the bloom threshold, so it glows. */
+    rim: 0.75,
+    rimPower: 2.6,
+    /** Horizontal scan lines per metre of height. */
+    bands: 64,
+    /** Darkness of the gaps between scan lines, 0–1. */
+    bandDepth: 0.62,
     /** Upward band speed, metres per second. */
     bandSpeed: 0.05,
     /** The slow bright band that sweeps up him every few seconds. */
-    sweep: 0.04,
+    sweep: 0.18,
     /** Seconds between flickers (randomised ±50%). */
-    flickerEvery: 10,
+    flickerEvery: 5,
     /** Depth of a flicker, 0–1. */
-    flicker: 0.14,
+    flicker: 0.3,
     /** Height above the floor (metres) over which his legs fade into the glow, and how far they fade, 0–1. */
     floorFade: 0.36,
     floorGlow: 0.5,
@@ -128,7 +142,7 @@ export const fx = {
     /** Points in the star field. */
     field: 82000,
     /** Points in the lion's head inside the orb. */
-    symbol: 11000,
+    symbol: 16000,
     /** Points in the orb's shell (its band gets about half as many). */
     orb: 16000,
     /** How hard the cursor pushes nearby stars. */

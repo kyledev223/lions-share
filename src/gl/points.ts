@@ -193,6 +193,8 @@ export class Cloud {
   col: number[] = []
   size: number[] = []
   seed: number[] = []
+  /** Optional per-point surface normals (filled with `normal()` right after each `add()`), sent as `aNormal`. */
+  nrm: number[] = []
   /** Seeded random, so a scene looks the same on every visit. */
   rand: () => number
 
@@ -212,11 +214,19 @@ export class Cloud {
     return this
   }
 
+  /** The surface normal of the point just added. */
+  normal(x: number, y: number, z: number) {
+    this.nrm.push(x, y, z)
+    return this
+  }
+
   build(look: CloudLook = {}) {
     // Shuffle, so drawing only the first half (lite mode) thins every shape evenly.
+    const arrays: [number[], number][] = [[this.pos, 3], [this.col, 3], [this.size, 1], [this.seed, 1]]
+    if (this.nrm.length) arrays.push([this.nrm, 3])
     for (let i = this.count - 1; i > 0; i--) {
       const j = Math.floor(this.rand() * (i + 1))
-      for (const [arr, k] of [[this.pos, 3], [this.col, 3], [this.size, 1], [this.seed, 1]] as const) {
+      for (const [arr, k] of arrays) {
         for (let c = 0; c < k; c++) {
           const t = arr[i * k + c]
           arr[i * k + c] = arr[j * k + c]
@@ -229,6 +239,7 @@ export class Cloud {
     geo.setAttribute('aColor', new THREE.Float32BufferAttribute(this.col, 3))
     geo.setAttribute('aSize', new THREE.Float32BufferAttribute(this.size, 1))
     geo.setAttribute('aSeed', new THREE.Float32BufferAttribute(this.seed, 1))
+    if (this.nrm.length) geo.setAttribute('aNormal', new THREE.Float32BufferAttribute(this.nrm, 3))
     const pts = new THREE.Points(geo, pointMaterial(look))
     pts.frustumCulled = false
     total += this.count

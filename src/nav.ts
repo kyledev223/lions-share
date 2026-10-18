@@ -56,6 +56,8 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   let index = 0
   let locked = true
   const indexOfHash = () => views.findIndex((v) => v.def.id === location.hash.slice(1))
+  /** Enter always lands on screen 01, so a #hash left over from a refresh or a pasted link is dropped (the query, e.g. ?debug, stays). */
+  const dropHash = () => location.hash && history.replaceState(null, '', location.pathname + location.search)
 
   /**
    * A gold bead runs down the rail from the old tick to the new one, arriving as the stage changes
@@ -111,7 +113,7 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
     root.dataset.screen = def.id
     root.classList.toggle('is-last', index === count - 1)
     const hash = '#' + def.id
-    // Before Enter the URL is left alone, so an incoming #hash survives to be honoured.
+    // Before Enter the URL is left alone; unlock() then clears any incoming #hash.
     if (!locked && location.hash !== hash && !(index === 0 && !location.hash)) {
       if (push) history.pushState(null, '', hash)
       else history.replaceState(null, '', hash)
@@ -154,8 +156,8 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
       },
       unlock() {
         locked = false
-        const i = indexOfHash()
-        if (i > 0) jump(i)
+        dropHash()
+        jump(0)
       },
       jump,
       setPaused(_p: boolean) {},
@@ -351,11 +353,10 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
     get locked() {
       return locked
     },
-    /** Called when the visitor has arrived on screen 01. Honours a #hash in the URL. */
+    /** Called when the visitor has arrived on screen 01. Always starts there, ignoring any #hash in the URL. */
     unlock() {
       locked = false
-      const i = indexOfHash()
-      if (i > 0) go(i, false)
+      dropHash()
     },
     jump: (i: number) => go(i),
     /** Suspends input while a lightbox is open. */
