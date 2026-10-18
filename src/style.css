@@ -130,8 +130,15 @@ mark {
 .line__in {
   display: block;
 }
-/* One letter of a headline: rises and drops on its own inside the line's mask. */
+/* One letter of a headline: rises and drops on its own inside its word's mask. Each word masks
+   itself, because a line can wrap onto two rows, and one mask over both rows would let the top
+   row's letters drop into view on the row below. */
 .line .w {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.04em;
+  margin-bottom: -0.04em;
   white-space: nowrap;
 }
 .ch {
