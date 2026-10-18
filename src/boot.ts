@@ -31,7 +31,7 @@ export interface BootOptions {
  * 3. Enter (~6.2s; the skip button in the corner or Esc cuts it short, a click elsewhere does not):
  *      0.0–0.4  buttons drop away; a low riser starts (with sound)
  *      0.4–3.5  the field spirals into the emblem, which spins up and
- *               brightens; four thick rings lock on round it one by one
+ *               brightens; three thick rings lock on round it one by one
  *               (a thump and a flicker each); from 1.4 it charges, pulsing
  *               and trembling harder
  *      3.5–3.9  implosion to a point, a beat of darkness, then a
@@ -156,10 +156,10 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
     for (let i = 0; i < engine.entry.ringCount; i++) {
       // Each ring's points rush in from the scatter, accelerating, and slam into place at `lock`:
       // the flash, the thump and the ring's own flare all land on that moment.
-      const lock = 1.2 + i * 0.6
+      const lock = 1.2 + i * 0.9
       tl.to(es, { rings: i + 1, duration: 0.45, ease: 'power2.in' }, lock - 0.45)
         .call(() => withSound && music.thump(), [], lock - 0.01)
-        .to(post.uFlash, { value: 0.14 + i * 0.05, duration: 0.03, ease: 'none' }, lock - 0.01)
+        .to(post.uFlash, { value: 0.14 + i * 0.075, duration: 0.03, ease: 'none' }, lock - 0.01)
         .to(post.uFlash, { value: 0, duration: 0.3, ease: 'power2.out' }, lock + 0.02)
     }
     // 3.5–3.9: implode, darkness, a shockwave + flash + burst.
