@@ -420,18 +420,19 @@ export async function createEntry(reduced: boolean) {
   const ringGroup = new THREE.Group()
   scene.add(ringGroup)
 
-  // The rings that lock on one by one as it charges: thick solid bands, each wider than the last,
-  // turning in their own planes. Each lands tipped the same RING_TIP away from facing you, so all
+  // The rings that lock on one by one as it charges: thick solid bands, all the same size (so they
+  // cross one another), turning in their own planes. Each lands tipped the same RING_TIP away from facing you, so all
   // read as equally thick, but leaning a different way (`lean`, degrees round the view, 120° apart).
   // radius and width ×R, notches (0 = solid), lean, turn speed; points follow the circumference.
   // Once all are on they flip about a diameter of their own (`flip`: its angle in the ring's
   // plane; `flipSpeed`: radians a second at full tumble), each at its own speed and direction.
+  const RING_R = 1.42
   const RING_W = 0.14
   const RING_TIP = THREE.MathUtils.degToRad(40)
   const RING_SPECS = [
-    { r: 1.2, w: RING_W, dashes: 0, lean: -75, turn: 1.1, flip: 0.3, flipSpeed: 11 },
-    { r: 1.42, w: RING_W, dashes: 0, lean: 45, turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
-    { r: 1.68, w: RING_W, dashes: 0, lean: 165, turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
+    { r: RING_R, w: RING_W, dashes: 0, lean: -75, turn: 1.1, flip: 0.3, flipSpeed: 11 },
+    { r: RING_R, w: RING_W, dashes: 0, lean: 45, turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
+    { r: RING_R, w: RING_W, dashes: 0, lean: 165, turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
   ] as const
   // The ring group carries the emblem's resting turn; undo it so the tips are as seen from the camera.
   const unrest = new THREE.Quaternion().setFromEuler(EMBLEM_REST).invert()
