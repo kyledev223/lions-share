@@ -19,6 +19,7 @@ import { C, svgRelief } from './shapes'
  *   vortex   the field spirals into the emblem
  *   spin     the emblem spins up and brightens
  *   rings    0 → ringCount: thick rings lock on round it, one per whole step
+ *   gyro     the rings tumble round it on their own axes, faster, drawing in tight
  *   charge   it trembles and pulses, harder as it rises
  *   implode  emblem and rings collapse to a point
  *   blast    a white-hot core bursts out from the centre, 0–1
@@ -414,14 +415,21 @@ export async function createEntry(reduced: boolean) {
     uRadius: { value: 99 },
   }
 
+  // The rings ride their own group: the emblem's resting turn and the cursor tilt, but not its
+  // spin, so once they're all on they can tumble round it independently, like a gyroscope.
+  const ringGroup = new THREE.Group()
+  scene.add(ringGroup)
+
   // The rings that lock on one by one as it charges: thick solid bands, each wider than the last,
   // tipped every which way (never edge-on at rest), turning in their own planes.
   // radius and width ×R, notches (0 = solid), tilt, turn speed; points follow the circumference.
+  // Once all are on they flip about a diameter of their own (`flip`: its angle in the ring's
+  // plane; `flipSpeed`: radians a second at full tumble), each at its own speed and direction.
   const RING_W = 0.14
   const RING_SPECS = [
-    { r: 1.2, w: RING_W, dashes: 0, tilt: [0.55, 0.6, 0.3], turn: 1.1 },
-    { r: 1.42, w: RING_W, dashes: 0, tilt: [-0.75, 0.55, 0], turn: -0.8 },
-    { r: 1.68, w: RING_W, dashes: 0, tilt: [0.4, -0.85, 0.9], turn: 0.6 },
+    { r: 1.2, w: RING_W, dashes: 0, tilt: [0.55, 0.6, 0.3], turn: 1.1, flip: 0.3, flipSpeed: 11 },
+    { r: 1.42, w: RING_W, dashes: 0, tilt: [-0.75, 0.55, 0], turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
+    { r: 1.68, w: RING_W, dashes: 0, tilt: [0.4, -0.85, 0.9], turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
   ] as const
   const rings = RING_SPECS.map((spec, ri) => {
     const c = new Cloud(130 + ri)
@@ -442,10 +450,12 @@ export async function createEntry(reduced: boolean) {
     const u = { ...symU, uForm: { value: 0 }, uGlow: { value: 0 }, uImplode: { value: 0 } }
     pts.material = new THREE.ShaderMaterial({ vertexShader: SYMBOL_VERT, fragmentShader: DOT_FRAG, uniforms: u, ...additive })
     const holder = new THREE.Group()
-    holder.rotation.set(spec.tilt[0], spec.tilt[1], spec.tilt[2])
+    const base = new THREE.Quaternion().setFromEuler(new THREE.Euler(spec.tilt[0], spec.tilt[1], spec.tilt[2]))
+    holder.quaternion.copy(base)
     holder.add(pts)
-    emblem.add(holder)
-    return { holder, u, turn: spec.turn, lockedAt: -1 }
+    ringGroup.add(holder)
+    const axis = new THREE.Vector3(Math.cos(spec.flip), Math.sin(spec.flip), 0)
+    return { holder, pts, u, base, axis, flipSpeed: spec.flipSpeed, flipAngle: 0, turn: spec.turn, lockedAt: -1 }
   })
 
   // Soft halo behind the emblem.
@@ -527,7 +537,7 @@ export async function createEntry(reduced: boolean) {
   streaks.frustumCulled = false
   camera.add(streaks)
 
-  const state = { vortex: 0, spin: 0, rings: 0, charge: 0, implode: 0, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 }
+  const state = { vortex: 0, spin: 0, rings: 0, gyro: 0, charge: 0, implode: 0, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 }
   let spinAngle = 0
   let travel = 0
   const ndcV = new THREE.Vector3()
@@ -539,6 +549,8 @@ export async function createEntry(reduced: boolean) {
   const tiltAim = new THREE.Vector2()
   const tiltQ = new THREE.Quaternion()
   const restQ = new THREE.Quaternion()
+  const ringRestQ = new THREE.Quaternion().setFromEuler(EMBLEM_REST)
+  const flipQ = new THREE.Quaternion()
   const euler = new THREE.Euler()
   const all =[fieldU, symU, ...rings.map((r) => r.u)]
 
@@ -598,14 +610,22 @@ export async function createEntry(reduced: boolean) {
       if (mouse && state.vortex === 0) lightAim.set(mouse.x * 1.3, mouse.y * 1.3, 0.75).normalize()
       else lightAim.copy(lightRest)
       orbU.uLight.value.lerp(lightAim, 1 - Math.exp(-dt / 0.25)).normalize()
+      // The rings share the coin's tilt and tremble but not its spin. As the gyro winds up they
+      // tumble faster and faster and draw in tight round it, glowing hotter.
+      const gyro = state.gyro * (1 - state.implode)
+      ringGroup.quaternion.multiplyQuaternions(tiltQ, ringRestQ)
+      ringGroup.position.copy(emblem.position)
+      ringGroup.scale.setScalar(1 - 0.16 * state.gyro * state.gyro)
       rings.forEach((r, i) => {
-        r.holder.rotation.z = r.turn * (t * 0.6 + state.spin * 10)
+        r.flipAngle = state.gyro === 0 ? 0 : r.flipAngle + dt * state.gyro * state.gyro * r.flipSpeed
+        r.holder.quaternion.copy(r.base).multiply(flipQ.setFromAxisAngle(r.axis, r.flipAngle))
+        r.pts.rotation.z = r.turn * (t * 0.6 + state.spin * 10)
         r.u.uForm.value = THREE.MathUtils.clamp(state.rings - i, 0, 1)
         // The moment it locks on (with the flash), the ring flares, then settles.
         if (r.u.uForm.value >= 0.999 && r.lockedAt < 0) r.lockedAt = time
         if (r.u.uForm.value < 0.999) r.lockedAt = -1
         const flare = r.lockedAt < 0 ? 0 : 2.5 * Math.exp(-(time - r.lockedAt) * 7)
-        r.u.uGlow.value = state.spin * 0.6 + pulse * 1.4 + flare
+        r.u.uGlow.value = state.spin * 0.6 + pulse * 1.4 + flare + gyro * gyro * 1.6
         r.u.uImplode.value = state.implode
       })
       halo.material.opacity = (1 - state.implode) * (1 + state.spin * 1.5 + pulse * 2)
