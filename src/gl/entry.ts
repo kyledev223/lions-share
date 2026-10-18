@@ -421,16 +421,20 @@ export async function createEntry(reduced: boolean) {
   scene.add(ringGroup)
 
   // The rings that lock on one by one as it charges: thick solid bands, each wider than the last,
-  // tipped every which way (never edge-on at rest), turning in their own planes.
-  // radius and width ×R, notches (0 = solid), tilt, turn speed; points follow the circumference.
+  // turning in their own planes. Each lands tipped the same RING_TIP away from facing you, so all
+  // read as equally thick, but leaning a different way (`lean`, degrees round the view, 120° apart).
+  // radius and width ×R, notches (0 = solid), lean, turn speed; points follow the circumference.
   // Once all are on they flip about a diameter of their own (`flip`: its angle in the ring's
   // plane; `flipSpeed`: radians a second at full tumble), each at its own speed and direction.
   const RING_W = 0.14
+  const RING_TIP = THREE.MathUtils.degToRad(40)
   const RING_SPECS = [
-    { r: 1.2, w: RING_W, dashes: 0, tilt: [0.55, 0.6, 0.3], turn: 1.1, flip: 0.3, flipSpeed: 11 },
-    { r: 1.42, w: RING_W, dashes: 0, tilt: [-0.75, 0.55, 0], turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
-    { r: 1.68, w: RING_W, dashes: 0, tilt: [0.4, -0.85, 0.9], turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
+    { r: 1.2, w: RING_W, dashes: 0, lean: -75, turn: 1.1, flip: 0.3, flipSpeed: 11 },
+    { r: 1.42, w: RING_W, dashes: 0, lean: 45, turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
+    { r: 1.68, w: RING_W, dashes: 0, lean: 165, turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
   ] as const
+  // The ring group carries the emblem's resting turn; undo it so the tips are as seen from the camera.
+  const unrest = new THREE.Quaternion().setFromEuler(EMBLEM_REST).invert()
   const rings = RING_SPECS.map((spec, ri) => {
     const c = new Cloud(130 + ri)
     for (let i = 0, k = n(6000 * (spec.r / 1.42)); i < k; i++) {
@@ -450,7 +454,9 @@ export async function createEntry(reduced: boolean) {
     const u = { ...symU, uForm: { value: 0 }, uGlow: { value: 0 }, uImplode: { value: 0 } }
     pts.material = new THREE.ShaderMaterial({ vertexShader: SYMBOL_VERT, fragmentShader: DOT_FRAG, uniforms: u, ...additive })
     const holder = new THREE.Group()
-    const base = new THREE.Quaternion().setFromEuler(new THREE.Euler(spec.tilt[0], spec.tilt[1], spec.tilt[2]))
+    const lean = THREE.MathUtils.degToRad(spec.lean)
+    const facing = new THREE.Vector3(Math.sin(RING_TIP) * Math.cos(lean), Math.sin(RING_TIP) * Math.sin(lean), Math.cos(RING_TIP))
+    const base = unrest.clone().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), facing))
     holder.quaternion.copy(base)
     holder.add(pts)
     ringGroup.add(holder)
