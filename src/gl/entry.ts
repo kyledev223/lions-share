@@ -23,7 +23,6 @@ import { C, svgRelief } from './shapes'
  *   implode  emblem and rings collapse to a point
  *   blast    a white-hot core bursts out from the centre, 0–1
  *   shock    a ring of light races outward
- *   shock2   a second, tipped wave just behind it
  *   warp     hyperspace streak speed, 0–1
  *   streaks  hyperspace streak opacity
  */
@@ -494,12 +493,6 @@ export async function createEntry(reduced: boolean) {
   const shockU = { uProj: shared.uProj, uShock: { value: 0 } }
   shockPts.material = new THREE.ShaderMaterial({ vertexShader: SHOCK_VERT, fragmentShader: DOT_FRAG, uniforms: shockU, ...additive })
   scene.add(shockPts)
-  // A second wave just behind the first, tipped toward the viewer.
-  const shock2U = { uProj: shared.uProj, uShock: { value: 0 } }
-  const shock2Pts = new THREE.Points(shockPts.geometry, new THREE.ShaderMaterial({ vertexShader: SHOCK_VERT, fragmentShader: DOT_FRAG, uniforms: shock2U, ...additive }))
-  shock2Pts.frustumCulled = shockPts.frustumCulled
-  shock2Pts.rotation.set(0.9, 0.25, 0)
-  scene.add(shock2Pts)
 
   // ---- hyperspace streaks (also carried into screen 01 while they slow down) --------
   const streakCount = n(fx.entry.streaks)
@@ -534,7 +527,7 @@ export async function createEntry(reduced: boolean) {
   streaks.frustumCulled = false
   camera.add(streaks)
 
-  const state = { vortex: 0, spin: 0, rings: 0, charge: 0, implode: 0, blast: 0, shock: 0, shock2: 0, warp: 0, streaks: 0, fov: 55 }
+  const state = { vortex: 0, spin: 0, rings: 0, charge: 0, implode: 0, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 }
   let spinAngle = 0
   let travel = 0
   const ndcV = new THREE.Vector3()
@@ -627,7 +620,6 @@ export async function createEntry(reduced: boolean) {
       orbU.uGlow.value = state.spin * 0.8 + pulse
       orbU.uImplode.value = state.implode
       shockU.uShock.value = state.shock
-      shock2U.uShock.value = state.shock2
     },
     /** Hyperspace streaks: speed eases in, then out; length follows speed. Runs in both modes. */
     tickStreaks(dt: number) {

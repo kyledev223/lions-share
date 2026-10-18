@@ -28,13 +28,13 @@ export interface BootOptions {
  * 1. A big 000 → 100 counter on black while everything loads.
  * 2. The entry screen: star field, the emblem in points, Enter /
  *    Enter without sound.
- * 3. Enter (~6.2s; click or Esc skips):
+ * 3. Enter (~6.2s; the skip button in the corner or Esc cuts it short, a click elsewhere does not):
  *      0.0–0.4  buttons drop away; a low riser starts (with sound)
  *      0.4–3.5  the field spirals into the emblem, which spins up and
  *               brightens; four thick rings lock on round it one by one
  *               (a thump and a flicker each); from 1.4 it charges, pulsing
  *               and trembling harder
- *      3.5–3.9  implosion to a point, a beat of darkness, then a double
+ *      3.5–3.9  implosion to a point, a beat of darkness, then a
  *               shockwave, a warm white flash and a colour burst (bass hit)
  *      3.9–5.4  hyperspace: streaks, accelerating
  *      5.4–6.2  the streaks slow and settle into screen 01's throne room; the mascot
@@ -161,13 +161,11 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
         .to(post.uFlash, { value: 0.12 + i * 0.05, duration: 0.04, ease: 'none' }, lock - 0.05)
         .to(post.uFlash, { value: 0, duration: 0.3, ease: 'power2.out' }, lock)
     }
-    // 3.5–3.9: implode, darkness, a double shockwave + flash + burst.
+    // 3.5–3.9: implode, darkness, a shockwave + flash + burst.
     tl.to(es, { implode: 1, duration: 0.18, ease: 'power3.in' }, IMPLODE)
       .call(() => withSound && music.impact(), [], IMPLODE + 0.29)
       .set(es, { shock: 0.001 }, IMPLODE + 0.3)
       .to(es, { shock: 1, duration: 0.75, ease: 'power2.out' }, IMPLODE + 0.3)
-      .set(es, { shock2: 0.001 }, IMPLODE + 0.42)
-      .to(es, { shock2: 1, duration: 0.9, ease: 'power2.out' }, IMPLODE + 0.42)
       // The core bursts out from the centre first; the whole frame flashes as it reaches the edges.
       .set(es, { blast: 0.001 }, IMPLODE + 0.3)
       .to(es, { blast: 1, duration: 0.7, ease: 'power2.out' }, IMPLODE + 0.3)
@@ -192,17 +190,16 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
 
     function finish() {
       document.removeEventListener('keydown', onKey)
-      window.removeEventListener('pointerdown', onSkip, true)
       engine.entry.carryStreaks(null)
       es.streaks = es.warp = 0
     }
 
-    /** Click or Esc: jump to the end state. */
+    /** The skip button or Esc: jump to the end state. */
     function skip() {
       if (tl.progress() >= 1) return
       tl.kill()
       toSite()
-      Object.assign(es, { vortex: 1, spin: 1, rings: engine.entry.ringCount, charge: 1, implode: 1, blast: 0, shock: 0, shock2: 0, warp: 0, streaks: 0, fov: 55 })
+      Object.assign(es, { vortex: 1, spin: 1, rings: engine.entry.ringCount, charge: 1, implode: 1, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 })
       post.uFlash.value = post.uBurst.value = 0
       gsap.to([shared.uAssemble, shared.uGather], { value: 1, duration: 0.5, ease: 'power3.out' })
       gsap.to(mascotU.uMaterialize, { value: 1, duration: 0.6, ease: 'power2.out' })
@@ -210,9 +207,13 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       finish()
     }
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && skip()
-    // The enter click itself is still propagating; listen from the next tick.
-    const onSkip = () => skip()
     document.addEventListener('keydown', onKey)
-    setTimeout(() => window.addEventListener('pointerdown', onSkip, true), 0)
+    // A click anywhere no longer cuts it short; only the skip button in the corner (or Esc) does.
+    // It goes with the entry overlay when the site arrives.
+    const skipBtn = entry.querySelector<HTMLButtonElement>('.entry__skip')!
+    skipBtn.hidden = false
+    skipBtn.addEventListener('click', skip)
+    skipBtn.focus({ preventScroll: true })
+    gsap.fromTo(skipBtn, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6, ease: 'power2.out', delay: 0.6 })
   }
 }

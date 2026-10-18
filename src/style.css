@@ -518,6 +518,29 @@ mark {
   text-align: center;
   color: var(--ink-faint);
 }
+/* Shown once the enter sequence is running: the only way to cut it short (besides Esc). */
+.entry__skip {
+  position: fixed;
+  right: var(--edge);
+  bottom: var(--edge);
+  padding: 0.5rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 244, 236, 0.22);
+  background: none;
+  font: 500 0.62rem/1 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.entry__skip[hidden] {
+  display: none;
+}
+.entry__skip:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
 
 /* While the loader and the entry are up, the site chrome waits its turn. */
 html.is-booting #site,
