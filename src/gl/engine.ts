@@ -355,6 +355,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     /** Start time (s, the loop's clock); −1 until its first frame. */
     t0: number
     swapped: boolean
+    /** One-shots: the old pose layer released, the new clip started. */
+    released: boolean
     clip: boolean
     cam: { k: number; bump: number }
     /** Set when the visitor flicks back in time: playing backwards from `at` (s) since `t0` (loop clock). */
@@ -372,6 +374,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     kind,
     t0: -1,
     swapped: false,
+    released: false,
     clip: false,
     cam: { k: 0, bump: 0 },
     back: null,
@@ -402,11 +405,14 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     }
     if (tr.kind === 'jump') return tickJump(tr, T)
 
-    // The clip starts blending to the next screen's, and the old pose layer lets go before the swap.
+    // The old pose layer lets go before the swap, then his clip starts blending to the next screen's.
+    if (!tr.released && !tr.back && T >= X.clip.releaseAt) {
+      tr.released = true
+      mascot.setOverlay(null, X.clip.release)
+    }
     if (!tr.clip && !tr.back && T >= X.clip.at) {
       tr.clip = true
       const spot = spotOf(stages[tr.to])
-      mascot.setOverlay(null, X.clip.release)
       if (spot) mascot.play(spot.clip, X.clip.fade, spot.speed)
     }
     if (!tr.swapped && T >= X.swap) {
@@ -717,14 +723,10 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
       const tr = trans
       if (!tr || tr.kind !== 'step' || tr.back || tr.swapped || tr.t0 < 0) return false
       const T = last - tr.t0
-      if (T > fx.transition.reverseWithin) return false
+      if (T > fx.transition.reverseWithin || tr.clip) return false
       tr.back = { at: T, t0: last }
-      // His pose goes back to the old screen's.
-      if (tr.clip) {
-        const spot = spotOf(stages[tr.from])
-        if (spot) mascot.play(spot.clip, 0.35, spot.speed)
-        stages[tr.from].enter?.(mascot, false)
-      }
+      // His clip hasn't changed yet (fx.transition.clip.at comes after this window); his pose layer comes back.
+      if (tr.released) stages[tr.from].enter?.(mascot, false)
       return true
     },
     /**

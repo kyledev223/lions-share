@@ -149,8 +149,12 @@ export const fx = {
     unlock: 0.95,
     /** Everything has settled. */
     end: 1.3,
-    /** His clip starts crossfading to the next screen's at `at`, over `fade`; the old pose layer releases over `release`. */
-    clip: { at: 0.1, fade: 0.8, release: 0.38 },
+    /**
+     * The old pose layer lets go from `releaseAt` over `release` (gone before the swap); his clip starts
+     * crossfading to the next screen's at `at`, over `fade`. `at` is just after `reverseWithin`, so a
+     * change turned back never has to restart his old clip (restarting puts some clips back at frame 0).
+     */
+    clip: { releaseAt: 0.1, release: 0.38, at: 0.31, fade: 0.7 },
     /** Camera journey, as fractions of his distance / metres at his scale / degrees, at the midpoint. */
     camera: { pull: 0.35, rise: 0.35, fov: 6, end: 1.25 },
     /** Points fly out over `out` and settle over `in` (seconds), swirling `swirl` radians round him at most. */
