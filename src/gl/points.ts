@@ -7,16 +7,33 @@ import { fx } from '../fx-config'
  * One draw call per cloud. Each point carries its colour (linear, may go
  * above 1 to feed the bloom), a size in world units and a random seed. The
  * shader adds a slow drift, an optional twinkle, optional wrap-around flow
- * (scrolling floors, tunnels), and the scatter/assemble used by screen
- * transitions: at `uAssemble` 0 every point is thrown out along its own
- * random direction; at 1 it sits where it was built.
+ * (scrolling floors, tunnels), and two kinds of motion:
+ *
+ *   gather  the first arrival: at `uGather` 0 every point is thrown out along
+ *           its own random direction (and unseen); at 1 it sits where it was built.
+ *   flight  screen changes: at `uMorph` 1 the points have lifted off and swirl
+ *           round `uPivot` (his feet), brighter and gilded; each starts and lands
+ *           on its own beat. They stay visible throughout, so the frame never empties.
  */
 
 /** Uniforms shared by every cloud (only one screen renders at a time). */
 export const shared = {
   uTime: { value: 0 },
-  /** 0 = scattered, 1 = in place. Animated by screen transitions. */
+  /**
+   * How present the stage's props and lights are: 1 = fully, lower while a screen change is
+   * mid-way. Custom shaders (beams, pools, fireworks, the pool on 09…) fade by it.
+   */
   uAssemble: { value: 1 },
+  /** First arrival only: 0 = scattered, 1 = in place. */
+  uGather: { value: 1 },
+  /** Screen changes: 0 = in place, 1 = fully in flight. */
+  uMorph: { value: 0 },
+  /** What the flight swirls round (world), and which way (+1 / −1) and how far (radians). */
+  uPivot: { value: new THREE.Vector3() },
+  uSwirl: { value: 1 },
+  /** Share of points that take flight (lite mode: half); the rest just dim a little. */
+  uFlightShare: { value: 1 },
+  uGold: { value: new THREE.Color(fx.palette.gold) },
   /** Device pixels per world unit at distance 1 (set from the camera each frame). */
   uProj: { value: 800 },
   /** Lite mode and density tweaks scale sizes a touch up when counts go down. */
@@ -40,7 +57,13 @@ export const n = (count: number) => Math.max(1, Math.round(count * densityScale 
 
 const VERT = /* glsl */ `
 uniform float uTime;
-uniform float uAssemble;
+uniform float uGather;
+uniform float uOwn;       // a cloud's own gather on top (06's gift, 10's coin)
+uniform float uMorph;
+uniform vec3 uPivot;
+uniform float uSwirl;
+uniform float uFlightShare;
+uniform vec3 uGold;
 uniform float uProj;
 uniform float uSizeK;
 uniform float uDrift;
@@ -70,22 +93,42 @@ void main() {
   if (uWrap.y > 0.0) p.y = uWrapMin.y + mod(p.y - uWrapMin.y, uWrap.y);
   if (uWrap.z > 0.0) p.z = uWrapMin.z + mod(p.z - uWrapMin.z, uWrap.z);
 
-  // Each point assembles on its own beat.
-  float a = clamp(uAssemble * 1.6 - aSeed * 0.6, 0.0, 1.0);
+  // First arrival: each point gathers on its own beat.
+  float a = clamp(uGather * uOwn * 1.6 - aSeed * 0.6, 0.0, 1.0);
   a = a * a * (3.0 - 2.0 * a);
   vec3 dir = normalize(hash3(aSeed * 91.7) + vec3(0.0, 0.15, 0.45));
   p += dir * (1.0 - a) * uScatter * (0.5 + aSeed);
 
-  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  vec4 wp = modelMatrix * vec4(p, 1.0);
+  // Screen changes: lift off on its own beat, swirl round him (less the further out), drift, glow gold.
+  float m = 0.0;
+  if (uMorph > 0.0) {
+    vec3 r = hash3(aSeed * 37.3) * 0.5 + 0.5;
+    float flies = step(r.z, uFlightShare);
+    m = clamp(uMorph * 1.5 - r.x * 0.5, 0.0, 1.0);
+    m = m * m * (3.0 - 2.0 * m);
+    vec3 d = wp.xyz - uPivot;
+    float ang = m * flies * uSwirl * (0.55 + 0.9 * r.y) / (1.0 + length(d.xz) * 0.18);
+    float c = cos(ang), sn = sin(ang);
+    d.xz = mat2(c, -sn, sn, c) * d.xz * (1.0 + m * flies * 0.18 * (0.5 + r.z));
+    d.y += m * flies * (0.25 + 0.6 * r.z) * (r.y - 0.35);
+    d += vec3(sin(wp.y * 1.7 + uTime * 0.9 + s), sin(wp.z * 1.5 + uTime * 0.7 + s * 2.0), sin(wp.x * 1.6 - uTime * 0.8 + s * 3.0)) * m * flies * 0.22;
+    wp.xyz = uPivot + d;
+    m *= mix(0.45, 1.0, flies);
+  }
+
+  vec4 mv = viewMatrix * wp;
   gl_Position = projectionMatrix * mv;
   float dist = max(-mv.z, 0.05);
   float px = aSize * uSizeK * uProj / dist;
+  // In flight, a point swept close to the camera stays a spark instead of swelling into a disc.
+  if (m > 0.0) px = min(px, mix(px, 5.0 * uSizeK, m));
   // Below ~1.4 device px a point would shimmer; hold the size and dim it instead.
   gl_PointSize = max(px, 1.4);
   float tw = 1.0 - uTwinkle + uTwinkle * (0.5 + 0.5 * sin(uTime * (1.3 + aSeed * 4.0) + s * 11.0));
   vAlpha = uOpacity * tw * a * min(1.0, px / 1.4);
   if (uDepthFade.y > 0.0) vAlpha *= 1.0 - smoothstep(uDepthFade.x, uDepthFade.y, dist);
-  vColor = aColor;
+  vColor = aColor * (1.0 + 0.35 * m) + uGold * m * 0.08 * (0.4 + aSeed);
 }`
 
 const FRAG = /* glsl */ `
@@ -127,6 +170,7 @@ export function pointMaterial(look: CloudLook = {}) {
     blendEquation: THREE.AddEquation,
     uniforms: {
       ...shared,
+      uOwn: { value: 1 },
       uDrift: { value: look.drift ?? 0.01 },
       uTwinkle: { value: look.twinkle ?? 0.3 },
       uScatter: { value: look.scatter ?? 4 },

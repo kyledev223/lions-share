@@ -129,7 +129,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       siteShown = true
       engine.showSite(0)
       engine.entry.carryStreaks(engine.stages[0].scene)
-      shared.uAssemble.value = 0
+      shared.uAssemble.value = shared.uGather.value = 0
       mascotU.uMaterialize.value = 0
     }
     const arrive = () => {
@@ -167,7 +167,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       .to(post.uBurst, { value: 0, duration: 0.6, ease: 'power2.out' }, 3.08)
       .to(es, { warp: 0, duration: 0.8, ease: 'power3.out' }, 3.0)
       .to(es, { streaks: 0, duration: 0.75, ease: 'power2.in' }, 3.05)
-      .to(shared.uAssemble, { value: 1, duration: 0.9, ease: 'power3.out' }, 3.0)
+      .to([shared.uAssemble, shared.uGather], { value: 1, duration: 0.9, ease: 'power3.out' }, 3.0)
       .to(mascotU.uMaterialize, { value: 1, duration: 1.1, ease: 'power2.inOut' }, 3.1)
       .call(arrive, [], 3.3)
       .call(finish, [], 3.85)
@@ -186,7 +186,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       toSite()
       Object.assign(es, { vortex: 1, spin: 1, ring: 1, implode: 1, shock: 0, warp: 0, streaks: 0, fov: 55 })
       post.uFlash.value = post.uBurst.value = 0
-      gsap.to(shared.uAssemble, { value: 1, duration: 0.5, ease: 'power3.out' })
+      gsap.to([shared.uAssemble, shared.uGather], { value: 1, duration: 0.5, ease: 'power3.out' })
       gsap.to(mascotU.uMaterialize, { value: 1, duration: 0.6, ease: 'power2.out' })
       arrive()
       finish()

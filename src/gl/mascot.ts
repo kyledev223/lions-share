@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { fx } from '../fx-config'
-import { shared } from './points'
+import { seeded, shared } from './points'
 
 /**
  * The mascot. There is a single one; each screen borrows him (engine.ts
@@ -93,6 +93,8 @@ uniform float uOpacity;
 uniform float uCeiling;
 uniform float uAoDirect;
 uniform float uSheen;
+uniform float uEmber;
+uniform vec3 uEmberColor;
 varying vec3 vW;
 
 float holoHash(vec2 p) {
@@ -143,6 +145,9 @@ const HOLO_END = /* glsl */ `
 
   // The scan front glows.
   col += uRimColor * 3.0 * exp(-(y - holoFront) * 28.0) * step(0.001, 1.0 - uMaterialize);
+
+  // Screen changes: a gold shimmer along his silhouette while the embers lift off it.
+  if (uEmber > 0.0) col += uEmberColor * uEmber * pow(1.0 - ndv, 3.0) * (0.55 + 0.45 * sin(uTime * 23.0 + y * 37.0));
   col *= uOpacity;
 }`
 
@@ -176,7 +181,112 @@ function holoUniforms(reduced: boolean): Record<string, THREE.IUniform> {
     uCeiling: { value: fx.holo.ceiling },
     uAoDirect: { value: fx.holo.aoDirect },
     uSheen: { value: fx.holo.sheen },
+    /** 0–1: the gold shimmer and embers off his silhouette during a screen change. */
+    uEmber: { value: 0 },
+    uEmberColor: { value: new THREE.Color(fx.palette.gold).multiplyScalar(1.6) },
   }
+}
+
+const EMBER_VERT = /* glsl */ `
+#include <common>
+#include <skinning_pars_vertex>
+uniform float uEmber;
+uniform float uTime;
+attribute vec2 aCorner;
+attribute vec2 aRand;
+varying vec2 vC;
+varying float vA;
+void main() {
+  #include <skinbase_vertex>
+  #include <beginnormal_vertex>
+  #include <skinnormal_vertex>
+  #include <begin_vertex>
+  #include <skinning_vertex>
+  vec4 mv = modelViewMatrix * vec4(transformed, 1.0);
+  vec3 n = normalize(normalMatrix * objectNormal);
+  // Only where the surface turns away from the camera: his outline.
+  float edge = smoothstep(0.42, 0.06, abs(dot(n, normalize(-mv.xyz))));
+  float life = fract(uTime * (0.7 + aRand.x * 0.9) + aRand.y * 9.0);
+  float lift = uEmber * life;
+  mv.xyz += n * lift * (0.03 + 0.09 * aRand.y);
+  mv.y += lift * (0.02 + 0.08 * aRand.x);
+  mv.xy += aCorner * (0.004 + 0.007 * aRand.x) * (1.0 - life * 0.6);
+  gl_Position = projectionMatrix * mv;
+  vC = aCorner;
+  vA = edge * uEmber * sin(3.14159 * life) * (0.6 + 0.4 * aRand.y);
+}`
+
+const EMBER_FRAG = /* glsl */ `
+uniform vec3 uEmberColor;
+varying vec2 vC;
+varying float vA;
+void main() {
+  float r2 = dot(vC, vC);
+  if (r2 > 1.0 || vA <= 0.0) discard;
+  gl_FragColor = vec4(uEmberColor * exp(-r2 * 3.0) * vA, 1.0);
+}`
+
+/**
+ * Gold embers that lift off his outline and settle back during a screen change:
+ * small sprites on vertices sampled from his mesh, skinned to the same skeleton,
+ * so they follow every pose. Shown only while `uEmber` > 0.
+ */
+function emberLayer(skinned: THREE.SkinnedMesh, uniforms: Record<string, THREE.IUniform>, count: number) {
+  const src = skinned.geometry
+  const pos = src.attributes.position
+  const nor = src.attributes.normal
+  const si = src.attributes.skinIndex
+  const sw = src.attributes.skinWeight
+  const rand = seeded(4242)
+  const P = new Float32Array(count * 12)
+  const N = new Float32Array(count * 12)
+  const I = new Float32Array(count * 16)
+  const W = new Float32Array(count * 16)
+  const C = new Float32Array(count * 8)
+  const R = new Float32Array(count * 8)
+  const index: number[] = []
+  const corners = [-1, -1, 1, -1, 1, 1, -1, 1]
+  for (let e = 0; e < count; e++) {
+    const v = Math.floor(rand() * pos.count)
+    const r1 = rand()
+    const r2 = rand()
+    for (let c = 0; c < 4; c++) {
+      const o = e * 4 + c
+      P.set([pos.getX(v), pos.getY(v), pos.getZ(v)], o * 3)
+      N.set([nor.getX(v), nor.getY(v), nor.getZ(v)], o * 3)
+      I.set([si.getX(v), si.getY(v), si.getZ(v), si.getW(v)], o * 4)
+      W.set([sw.getX(v), sw.getY(v), sw.getZ(v), sw.getW(v)], o * 4)
+      C.set([corners[c * 2], corners[c * 2 + 1]], o * 2)
+      R.set([r1, r2], o * 2)
+    }
+    const b = e * 4
+    index.push(b, b + 1, b + 2, b, b + 2, b + 3)
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(P, 3))
+  geo.setAttribute('normal', new THREE.BufferAttribute(N, 3))
+  geo.setAttribute('skinIndex', new THREE.BufferAttribute(I, 4))
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(W, 4))
+  geo.setAttribute('aCorner', new THREE.BufferAttribute(C, 2))
+  geo.setAttribute('aRand', new THREE.BufferAttribute(R, 2))
+  geo.setIndex(index)
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: EMBER_VERT,
+    fragmentShader: EMBER_FRAG,
+    uniforms: { uEmber: uniforms.uEmber, uEmberColor: uniforms.uEmberColor, uTime: uniforms.uTime },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.CustomBlending,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneFactor,
+  })
+  const mesh = new THREE.SkinnedMesh(geo, mat)
+  mesh.frustumCulled = false
+  mesh.visible = false
+  // As his child with no offset of its own, it shares his world matrix, so his bind matrix fits.
+  skinned.add(mesh)
+  mesh.bind(skinned.skeleton, skinned.bindMatrix)
+  return mesh
 }
 
 /** A flicker every few seconds: two quick dips. */
@@ -283,6 +393,7 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
   source.dispose()
   // Animated far from his bind pose, the rest-pose bounds would cull him by mistake.
   skinned.frustumCulled = false
+  const embers = emberLayer(skinned, uniforms, 2600)
 
   // ---- lights: key and fill ride with the camera, a back light outlines him ----
   const key = new THREE.DirectionalLight(0xfff4ea, fx.holo.key)
@@ -409,6 +520,7 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       }
       rememberPose()
       flick(dt, time)
+      embers.visible = uniforms.uEmber.value > 0.001
     },
     topY() {
       head.getWorldPosition(tmp)

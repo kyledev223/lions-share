@@ -137,8 +137,35 @@ export const fx = {
     streaks: 2200,
   },
 
-  /** Screen transitions (seconds). */
-  transition: { out: 0.4, in: 0.5, intro: 1.2 },
+  /**
+   * Screen transitions ("the pounce"). Times are seconds from the input. The lion stays on screen:
+   * the camera swings round him while the old stage swirls away, the frame is cut by the claw at
+   * `swap`, and the new stage settles in around him.
+   */
+  transition: {
+    /** The stage changes here, under the claw. */
+    swap: 0.49,
+    /** Input is accepted again. */
+    unlock: 0.95,
+    /** Everything has settled. */
+    end: 1.3,
+    /** His clip starts crossfading to the next screen's at `at`, over `fade`; the old pose layer releases over `release`. */
+    clip: { at: 0.1, fade: 0.8, release: 0.38 },
+    /** Camera journey, as fractions of his distance / metres at his scale / degrees, at the midpoint. */
+    camera: { pull: 0.35, rise: 0.35, fov: 6, end: 1.25 },
+    /** Points fly out over `out` and settle over `in` (seconds), swirling `swirl` radians round him at most. */
+    flight: { out: [0.1, 0.49] as [number, number], in: [0.49, 1.2] as [number, number], swirl: 1.1 },
+    /** How far props and lights dim at the swap (1 = not at all). */
+    presence: 0.55,
+    /** The claw: how long the hit lasts, centred on `swap`. */
+    claw: 0.15,
+    /** How far the blacks lift toward the wash colour at the midpoint, 0–1. */
+    lift: 0.3,
+    /** Gold embers off his silhouette, rising from and settling back to nothing over this window. */
+    embers: [0.2, 0.98] as [number, number],
+    /** Reduced motion: a plain crossfade. */
+    reducedFade: 0.4,
+  },
 }
 
 export type Fx = typeof fx

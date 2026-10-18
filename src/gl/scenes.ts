@@ -356,6 +356,9 @@ function theName(emblem: Stamp): Stage {
     scene,
     camera: { pos: V(0, 0, 8.4), target: V(0, 0, 0), fov: 42 },
     portrait: { pos: V(1.4, 0, 12), target: V(1.4, 0, 0), fov: 52 },
+    // Not in the picture here: he stands below the frame looking up at his name, so the camera
+    // rises away from him on the way in and comes back down to him on the way out.
+    offstage: { pos: V(-1.2, -7, 3.6), rotY: 0, clip: 'looking-up' },
     update(t) {
       title.rotation.y = -0.42 + Math.sin(t * 0.18) * 0.16
       title.rotation.x = -0.32 + Math.sin(t * 0.13) * 0.05
@@ -716,7 +719,7 @@ function forYou(emblem: Stamp): Stage {
   }, { twinkle: 0.15, scatter: 0.25, drift: 0.0004 })
   giftPoints.frustumCulled = false
   const giftAssemble = { value: 0 }
-  uniformsOf(giftPoints).uAssemble = giftAssemble
+  uniformsOf(giftPoints).uOwn = giftAssemble
   const giftGlow = glow(gift, V(0, 0, -0.01), 0.2, 'rgba(240,120,70,0.7)', 0.3)
   giftGlow.onBeforeRender = () => {} // its opacity follows the gift's own assemble (placeGift)
   giftGlow.material.opacity = 0
@@ -1380,7 +1383,7 @@ function theToken(emblem: Stamp, lion: Stamp): Stage {
   const held = new THREE.Group()
   const coinPoints = cloud(held, 1005, (c) => heroCoin(c, lion, R), { twinkle: 0.3, scatter: 0.45, drift: 0.0004 })
   const coinAssemble = { value: 0 }
-  uniformsOf(coinPoints).uAssemble = coinAssemble
+  uniformsOf(coinPoints).uOwn = coinAssemble
   const coinGlow = glow(held, V(0, 0, -0.02), R * 5, 'rgba(255,190,90,0.85)', 0)
   coinGlow.onBeforeRender = (_r, _s, camera) => viewer.position.copy(camera.position)
   const shine = glint(R)
@@ -1483,6 +1486,8 @@ function theMemes({ ring: memeRing, openMeme }: SceneDeps): Stage {
     clickables,
     update(_t, dt) {
       memeRing.update(dt)
+      // Shrinks back toward him while a screen change is under way (exactly 0.78 at rest).
+      memeRing.group.scale.setScalar(0.78 * THREE.MathUtils.lerp(0.55, 1, THREE.MathUtils.smoothstep(shared.uAssemble.value, fx.transition.presence, 1)))
     },
   }
 }
