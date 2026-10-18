@@ -34,7 +34,9 @@ const letters = (t: string) =>
     .split(' ')
     .map((w) => `<span class="w">${[...w].map((c) => `<span class="ch">${esc(c)}</span>`).join('')}</span>`)
     .join(' ')
-const lines = (...l: string[]) => l.map((t) => `<span class="line" aria-hidden="true"><span class="line__in">${letters(t)}</span></span>`).join('')
+/** Each line twice: as plain text (shown at rest, so kerning is untouched) and split into letters (shown while moving). */
+const lines = (...l: string[]) =>
+  l.map((t) => `<span class="line" aria-hidden="true"><span class="line__in"><span class="line__plain">${esc(t)}</span><span class="line__split">${letters(t)}</span></span></span>`).join('')
 const eyebrow = (s: string) => `<p class="eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> <span class="eyebrow__t">${esc(s)}</span></p>`
 const head = (...l: string[]) => `<h2 class="display" aria-label="${esc(l.join(' '))}">${lines(...l)}</h2>`
 const lede = (s: string) => `<p class="lede" data-in>${mark(s)}</p>`

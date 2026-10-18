@@ -144,14 +144,11 @@ mark {
 .ch {
   display: inline-block;
 }
-/* At rest the letters are plain text again (screens.ts adds .is-still when they land): kerning
-   comes back and nothing is clipped, so the headline sets exactly as it would unsplit. */
-.display.is-still .w,
-.display.is-still .ch {
-  display: inline;
-  overflow: visible;
-  padding: 0;
-  margin: 0;
+/* At rest (screens.ts adds .is-still when the letters land) a line shows its plain-text copy, so
+   the headline sets exactly as it would unsplit, kerning included; the letters show only while moving. */
+.display.is-still .line__split,
+.display:not(.is-still) .line__plain {
+  display: none;
 }
 .eyebrow,
 .note,
