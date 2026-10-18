@@ -1,7 +1,8 @@
 import { ambientAsker, answerFor, cleanQuestion, isBlocked } from './content/lion-answers'
 
 /**
- * Screen 09's live Q&A: the card on the right and the visitor's question box.
+ * Screen 09's live Q&A, an airdrop FAQ in the lion's voice: the card on the
+ * right and the visitor's question box.
  *
  * Questions rise from the watering hole as bubbles (gl/watering-hole.ts);
  * when one pops on his phone the card shows it, "Lion is typing…" for a
@@ -41,7 +42,6 @@ interface Entry {
   a: string
 }
 
-const roundK = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1).replace(/\.0$/, '')}K` : String(v))
 const clock = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase()
 
 export function createAsk(view: HTMLElement, reduced: boolean): AskLink {
@@ -98,15 +98,9 @@ export function createAsk(view: HTMLElement, reduced: boolean): AskLink {
     typing = false
     aEl.textContent = entry.a
     card.classList.remove('is-typing', 'is-writing')
-    const roars = 120 + Math.floor(Math.random() * 4800)
-    const replies = 8 + Math.floor(Math.random() * 640)
-    foot.replaceChildren(
-      ...[`${clock()} · OFFICE HOURS`, `${roundK(roars)} ROARS`, `${roundK(replies)} REPLIES`].map((t, i) => {
-        const el = document.createElement(i ? 'span' : 'time')
-        el.textContent = t
-        return el
-      }),
-    )
+    const time = document.createElement('time')
+    time.textContent = `${clock()} · OFFICE HOURS`
+    foot.replaceChildren(time)
     announce.textContent = `${entry.q ? `${entry.who}: ${entry.q}. ` : ''}The lion answers: ${entry.a}`
     refresh()
   }

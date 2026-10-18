@@ -4,6 +4,7 @@ import '@fontsource/jetbrains-mono/500.css'
 import './style.css'
 
 import gsap from 'gsap'
+import { initCountdown } from './airdrop'
 import { createAsk } from './ask'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'
@@ -35,6 +36,7 @@ void initLite()
 
 const views = renderScreens(document.getElementById('screens')!, reduced)
 hydrateToken()
+initCountdown()
 initSoundControl()
 // Screen 09's question box and live Q&A card; the stage sends the bubbles.
 const ask = createAsk(views.find((v) => v.def.id === 'ask')!.el, reduced)
@@ -83,6 +85,15 @@ const ready: Promise<Engine> = fonts.then(async () => {
   if (params.has('debug')) {
     void import('./debug').then((m) => m.initDebug(() => `${String(nav.index + 1).padStart(2, '0')} ${views[nav.index].def.id} · ${engine.info()}`))
   }
+
+  // ---- in-page links to another screen ("How it works" on 01) ---------------------
+  document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest?.<HTMLAnchorElement>('a[data-goto]')
+    if (!a) return
+    e.preventDefault()
+    const i = views.findIndex((v) => v.def.id === a.dataset.goto)
+    if (i >= 0 && !nav.locked) nav.jump(i)
+  })
 
   // ---- clicks into the 3D scene (bare canvas only) ---------------------------
   canvas.addEventListener('click', (e) => !nav.locked && engine.pick(e.clientX, e.clientY)?.onClick())

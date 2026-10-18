@@ -28,7 +28,7 @@
   --edge: 2.5rem;
   --rail: 7.5rem; /* room kept clear for the rail on the right */
   --h-display: 6.75rem;
-  --h-hero: 10rem;
+  --h-hero: 5.6rem;
 }
 
 /* ==========================================================================
@@ -155,8 +155,7 @@ mark {
 .hint,
 .hudlabel,
 .btn,
-.post footer,
-.quote figcaption {
+.post footer {
   font-family: var(--f-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -186,20 +185,6 @@ mark {
   max-width: 60ch;
   font-size: 0.7rem;
   line-height: 1.6;
-  color: var(--ink-faint);
-}
-.quote {
-  display: grid;
-  gap: 0.375rem;
-  max-width: 34ch;
-}
-.quote blockquote {
-  font-size: 1.6rem;
-  line-height: 1.28;
-  font-weight: 450;
-}
-.quote figcaption {
-  font-size: 0.68rem;
   color: var(--ink-faint);
 }
 
@@ -901,8 +886,9 @@ html.is-jacked .screen.is-active {
 }
 
 /* ---- 01 hero ---- */
-.screen--lion .screen__copy {
+.screen--hold .screen__copy {
   align-self: center;
+  width: 54rem;
   margin-top: -5.9rem;
   gap: 1.625rem;
 }
@@ -920,12 +906,127 @@ html.is-jacked .screen.is-active {
   line-height: 1.15;
   text-transform: uppercase;
 }
-.screen--stage .quote,
-.screen--stage .note {
+.screen--how .note {
   max-width: 40ch;
 }
 
-/* ---- post cards: a generic dark card on a made-up network ---- */
+/* ---- 03: the three steps ---- */
+.steps {
+  display: grid;
+  gap: 1.125rem;
+  max-width: 34ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.steps li {
+  display: grid;
+  gap: 0.25rem;
+}
+.steps__n {
+  font: 500 0.74rem/1 var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--red-text);
+}
+.steps__t {
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-weight: 650;
+}
+.steps__d {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+/* ---- 04: the countdown inside the announcement ---- */
+.countdown {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid rgba(201, 162, 74, 0.55);
+  border-radius: 0.75rem;
+  background: rgba(30, 22, 6, 0.4);
+}
+.countdown__label,
+.countdown__date {
+  font: 500 0.64rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-hi);
+}
+.countdown__date {
+  color: var(--ink-faint);
+}
+.countdown__value {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-stretch: 112%;
+  font-size: 1.9rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+/* ---- 05: the rules ---- */
+.rules {
+  display: grid;
+  gap: 0.875rem;
+  width: min(100%, 36rem);
+}
+.rules div {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.rules dt {
+  font: 500 0.68rem/1.2 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-hi);
+}
+.rules dd {
+  font-size: 1.45rem;
+  line-height: 1.28;
+  font-weight: 450;
+}
+
+/* ---- 08: the rounds so far ---- */
+.drops {
+  display: grid;
+  width: min(100%, 40rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 0.72rem/1.4 var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.drops li {
+  display: grid;
+  grid-template-columns: 7.5rem 5.5rem 1fr 8rem auto;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--line);
+}
+.drops li > span:first-child {
+  color: var(--gold-hi);
+}
+.drops__tx {
+  justify-self: start;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 62.4375rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+a.drops__tx:hover {
+  border-color: var(--light);
+}
+
+/* ---- post cards: official announcements, no handles, no counts ---- */
 .post {
   display: grid;
   gap: 0.75rem;
@@ -978,16 +1079,6 @@ html.is-jacked .screen.is-active {
   font-size: 1.02rem;
   line-height: 1.42;
 }
-.post__quoted {
-  display: grid;
-  gap: 0.375rem;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  font-size: 0.86rem;
-  line-height: 1.42;
-  color: var(--ink-dim);
-}
 .post footer {
   display: flex;
   flex-wrap: wrap;
@@ -1013,7 +1104,29 @@ html.is-jacked .screen.is-active {
   color: var(--red-text);
 }
 
-/* ---- 12 join: contract box, stats, disclaimer ---- */
+/* ---- 12 join: safety notice, contract box, stats, disclaimer ---- */
+.safety {
+  display: grid;
+  gap: 0.375rem;
+  width: min(100%, 35rem);
+  padding: 0.75rem 0.875rem;
+  border: 1px solid rgba(229, 35, 47, 0.6);
+  border-radius: 0.875rem;
+  background: rgba(40, 6, 9, 0.55);
+}
+.safety__label {
+  font: 500 0.64rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red-text);
+}
+.safety p {
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.post .cabox {
+  width: 100%;
+}
 .cabox {
   display: grid;
   gap: 0.375rem;
@@ -1054,13 +1167,13 @@ html.is-jacked .screen.is-active {
   color: var(--ink);
 }
 .disclaimer {
-  max-width: 62ch;
+  max-width: 45rem;
   font-size: 0.7rem;
   line-height: 1.5;
   color: var(--ink-faint);
 }
 .screen--join .screen__copy {
-  gap: 0.875rem;
+  gap: 0.75rem;
 }
 
 /* ==========================================================================
@@ -1243,7 +1356,7 @@ html.is-dragging .cursor__ring::before {
     --gutter: 18px;
     --edge: 14px;
     --h-display: clamp(2rem, min(10.5vw, 6.4vh), 3.8rem);
-    --h-hero: clamp(2.8rem, 15vw, 5rem);
+    --h-hero: clamp(2rem, min(10.5vw, 6.4vh), 3.8rem);
   }
   .screen {
     align-items: flex-end;
@@ -1263,14 +1376,13 @@ html.is-dragging .cursor__ring::before {
     justify-items: start;
     text-align: left;
   }
-  .screen--lion .screen__copy {
+  .screen--hold .screen__copy {
     margin-top: 0;
   }
   .screen__aside {
     display: none;
   }
-  .lede,
-  .quote blockquote {
+  .lede {
     font-size: 1rem;
   }
   .body {
@@ -1314,8 +1426,31 @@ html.is-dragging .cursor__ring::before {
   .screen--join .cabox + .actions {
     display: none;
   }
+  /* 07's reserve card is the point of the screen: on phones it sits under the copy instead of vanishing. */
+  .screen--proof {
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .screen--proof .screen__aside {
+    display: block;
+    position: static;
+    width: auto;
+    transform: none;
+  }
+  .screen--proof .post__text {
+    display: none;
+  }
+  .drops li {
+    grid-template-columns: 1fr auto;
+    gap: 2px 10px;
+  }
+  .drops li > span:nth-child(n + 3) {
+    color: var(--ink-dim);
+  }
   /* Two long screens lose their lede on phones; the card and buttons carry them. */
-  .screen--hunt .lede,
+  .screen--snapshots .lede,
   .screen--join .lede {
     display: none;
   }

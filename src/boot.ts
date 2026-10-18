@@ -5,9 +5,9 @@ import { shared } from './gl/points'
 
 const STATUS = [
   [0, 'Gathering the pride…'],
-  [38, 'Measuring out the share…'],
-  [72, 'Straightening the tie…'],
-  [100, 'The throne is warm.'],
+  [38, 'Counting the holders…'],
+  [72, 'Measuring out the shares…'],
+  [100, 'The share is ready.'],
 ] as const
 
 export interface BootOptions {
