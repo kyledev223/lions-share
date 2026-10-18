@@ -32,6 +32,8 @@ export interface MascotSpot {
   rotY: number
   clip: ClipName
   scale?: number
+  /** Playback speed here, if not the clip's usual (fx.mascot.speed). */
+  speed?: number
 }
 
 /** One screen's 3D scene. Only the active one is updated and drawn. */
@@ -43,6 +45,8 @@ export interface Stage {
   portrait?: Partial<StageCamera>
   mascot?: MascotSpot
   update?(time: number, dt: number): void
+  /** Runs just before the stage is drawn, with the camera placed (e.g. to render a reflection). */
+  beforeRender?(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void
   /** `instant`: his first arrival (no transition), so anything that settles in should be there already. */
   enter?(mascot: Mascot, instant: boolean): void
   leave?(mascot: Mascot): void
@@ -187,7 +191,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     mascot.root.rotation.set(0, c.rotY, 0)
     mascot.root.scale.setScalar(c.scale ?? 1)
     stage.scene.add(mascot.root)
-    mascot.play(c.clip, fx.mascot.crossfade)
+    mascot.play(c.clip, fx.mascot.crossfade, c.speed)
     mascot.uniforms.uFloorY.value = c.pos.y
   }
 
@@ -233,6 +237,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     if (cold) {
       seatMascot(cold)
       placeCamera(cold, time)
+      cold.beforeRender?.(renderer, camera)
       renderPass.scene = cold.scene
       renderPass.camera = camera
       composer.render(dt)
@@ -257,6 +262,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
       renderPass.scene = stage.scene
       renderPass.camera = camera
       setProj(camera)
+      stage.beforeRender?.(renderer, camera)
     }
     entry.tickStreaks(dt)
     post.uTime.value = opts.reduced ? 0 : time

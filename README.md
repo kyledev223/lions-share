@@ -54,7 +54,15 @@ Blender is found via `$BLENDER`, then `PATH`, then the usual install folders (an
 
 **At the podium (05)** the same kind of layer (`src/gl/podium.ts`) rests his hands on the podium top over the idle clip, elbows bent down and back, with the same occasional finger tap. Both layers share `src/gl/ik.ts` (two-bone IK, blending with the clip, and prop frames that travel with him on the way out).
 
-**Props** ride on his hand bones (`onHand` in `src/gl/scenes.ts`): the coupe's stem across his left fist (08), the phone flat in his left palm (09), the coin just above his left palm (10). Mixamo hand bones point down the fingers along +Y with the palm facing +Z, so offsets are given in those axes. The mic stand on 03 stands on the floor beside him.
+**Reaching out (06)** is a third layer, `src/gl/reach.ts`, over the idle clip: his right arm held out toward the camera (two-bone IK, elbow soft, shoulder forward), the paw palm-up with its fingers eased open, his head and neck turned to the viewer with the chin kept level, a few millimetres of drift and a small nod every 7–11s. The reach hangs off a shoulder position smoothed over ~30s, so the idle's sway bends the elbow instead of moving the hand. Palm-up is deliberate: the paw is sculpted closed, so palm-down reads as a fist, while palm-up reads as an offer. Over the palm floats the lion head from the emblem (no coin ring) in points, with a soft red-gold glow and a small warm light on his paw and muzzle; it gathers as the arm settles (0.45–1.2s after arrival) and scatters with the scene on the way out. The arm rises over 0.8s and lowers over the 0.6s crossfade. The halo ring is placed each frame on the line from the camera through his head, so his head stays centred in it.
+
+**Holding up the coin (10)** is a fourth layer, `src/gl/trophy.ts`, over the idle clip. The idle has a slow sway of several centimetres, so this layer first holds his body at the clip's average pose (`mascot.clip('idle')`) and adds its own slow breath (chest and shoulders). His right upper arm goes out to his side, elbow bent about 90°, forearm up, fist at head height and clear of his mane (two-bone IK to a point in his own frame, with a few millimetres of drift). His weight is on his left leg with the hip out (leg IK keeps both feet planted), chest out, shoulders back. He looks up at the coin, and every 6–9s turns slowly to the camera for a couple of seconds and back. The coin rides on his right hand bone but stays upright, facing the camera, with its lower half inside the fist: a gold face, a milled rim and a bead ring, the emblem's lion embossed on it, a soft gold glow, and a warm light set out in front of it for his paw, muzzle and the underside of his mane. A glint sweeps across it every 3.5–5s and a few sparks lift off now and then. The arm rises over 0.8s and the coin gathers from gold points as it settles (0.45–1.2s). On the way out the coin dissolves in the first quarter-second of the scatter, then the arm lowers over the 0.6s crossfade.
+
+**Pose layers** (`mascot.setOverlay`) fade in and out independently, so one can release while the next settles in (05 → 06 → 07 hands over from the podium to the reach to nothing). The mascot resets bones the clips don't animate before the layers run each frame, so nothing they write accumulates.
+
+**Walking toward you (12)** reuses the in-place walk at 0.85× (`speed` on the stage's mascot spot), turned to face the camera and then ~12° more toward screen left. A fourth layer, `src/gl/stride.ts`, keeps it composed: each arm bone eases 30% of the way toward its average over the clip (so the swing is 30% smaller around the same pose), the chest lifts and the shoulders draw back a touch, and the head turns to the camera with the chin kept level. The gaze correction is smoothed over ~0.9s, so it takes out only the average error and leaves the walk's own head motion on top. The floor is a runway of light rows that scroll the opposite way to his facing at his planted foot's speed (0.99 m/s × 0.85 × his current size), so his feet stay put on the rows; they fade in under the camera and out toward the horizon. He grows 3% over 10s and eases back over the next 10s (a seamless loop), and the floor speed scales with him. A red pool follows his hips. The greeting clip is still in lion.glb, just not on any screen.
+
+**Props** ride on his hand bones (`onHand` in `src/gl/scenes.ts`): the coupe's stem across his left fist (08), the phone flat in his left palm (09), the coin upright in his raised right fist (10, placed by `coinPoint` in `src/gl/trophy.ts`). Mixamo hand bones point down the fingers along +Y with the palm facing +Z, so offsets are given in those axes. The mic stand on 03 stands on the floor beside him.
 
 **Current build:** 735k triangles at full detail, a 2048 colour texture and a 2048 AO/roughness texture (WebP), ten clips, meshopt-compressed: 6.6 MB.
 
@@ -76,13 +84,19 @@ src/
     mascot.ts           loads lion.glb (PBR + hologram) or builds the placeholder figure; lights, clips, flicker, pose layers
     throne-pose.ts      the throne's measurements and the IK that seats him in it (screen 01)
     podium.ts           the podium's measurements and the IK that rests his hands on it (screen 05)
+    reach.ts            the held reach and gaze toward the viewer (screen 06)
+    stride.ts           the composed walk toward the viewer (screen 12)
+    trophy.ts           the coin held up in his fist, the still body, the gaze to the coin and back (screen 10)
     ik.ts               two-bone IK and the bookkeeping the pose layers share
     entry.ts            star field, the orb (shell, notched band, lion head) in points, vortex, shockwave, hyperspace streaks
     post.ts             the final pass: tone map, grain, scan texture, fringing, vignette, flash, glitch, lens
     scenes.ts           the twelve stages, in page order
     ring.ts             the 3D meme ring (drag, inertia, snap)
+    watering-hole.ts    screen 09: the pool (points, ripples, edge glow, mist, reflection), the question bubbles, his glance
   cursor.ts             ring + dot cursor (shows DRAG over the meme ring)
   lightbox.ts           meme viewer
+  ask.ts                screen 09's live Q&A card and question box
+  content/lion-answers.ts  the lion's answers, the topics they match, the profanity filter, the questions that rise on their own
   config.ts             contract address, links, stats
   token.ts              turns config into controls (greyed out until a value is set)
   audio.ts              generated music, the enter riser and bass hit, the music pill
@@ -107,17 +121,27 @@ public/assets/lion/     lion.glb, written by npm run mascot
 | 03 | `#stage` | On stage | presenting on a raised round riser, a mic stand beside him | spotlight cone, a crowd of gold-dust heads and shoulders all round the riser, a dot-matrix screen showing the emblem |
 | 04 | `#hunt` | The hunt | walking, side view | a savanna horizon drawn in candlesticks, an acacia, a low striped sun; the floor scrolls under him |
 | 05 | `#pride` | The pride | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
-| 06 | `#foryou` | For you | reaching, close up | a tunnel of rings, a halo behind his head |
+| 06 | `#foryou` | For you | idle with a held reach: palm up toward the viewer, offering a small glowing lion crest; head turned to camera, framed mid-thigh up | a tunnel of rings, the brightest ring kept round his head as a halo |
 | 07 | `#summit` | The summit | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
 | 08 | `#cheers` | Cheers | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
-| 09 | `#ask` | Ask the lion | typing on a glowing phone | drifting questions |
-| 10 | `#token` | The token | looking-at-hand, a coin above his palm | drifting gold coins, the emblem |
+| 09 | `#ask` | Ask the lion: the Watering Hole | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
+| 10 | `#token` | The token | idle, held still with the coin raised in his right fist like a trophy; looks at it, now and then at you | drifting gold coins, the emblem (up and to the right, so the coin reads against dark space) |
 | 11 | `#memes` | The memes | idle | the meme ring around him, gold dust on the floor |
-| 12 | `#join` | Join the pride | greeting | the emblem behind him, gold light lines |
+| 12 | `#join` | Join the pride | walking toward the viewer at 0.85×, angled ~12° to screen left; chin level, eyes on the camera; seen from hip height, knees up | a runway of white and gold light rows (a few red sparks) scrolling at his stride, a red pool under his feet, the emblem far behind and dimmed |
 
 The hologram is the same on the lion and the placeholder: faint bands drifting upward, a thin red rim, legs fading into the floor glow, a flicker every few seconds; he scans in from the top on arrival and dissolves on the way out.
 
 Copy for all of them is in `src/screens.ts`; wrap a phrase in `{{double braces}}` to highlight it in red. The "posts" are generic cards on a made-up network called the Watering Hole.
+
+### 09, the Watering Hole
+
+He stands on a rock ledge above a dark pool of points (`src/gl/watering-hole.ts`, staged in `scenes.ts`). Every ~2.5s a question bubble rises from the water and drifts off high; every ~8s one curves to his phone and pops in a burst of sparks, he glances down, and the card on the right (`src/ask.ts`) shows the question, "Lion is typing…" for 1.2s, then his answer typing out, with the last three Q&As stacked behind it. Up to eight bubbles at once, four in lite mode.
+
+- **Visitors can ask.** The box under the copy takes up to 80 characters; ASK or Enter sends a bigger, brighter bubble that always reaches him. One question per 4s, and ASK waits while he's typing. While the box has focus, the wheel, swipes and arrow keys leave the screen alone; Esc gives them back.
+- **Answers** are in `src/content/lion-answers.ts`: about thirty general one-liners (random, no repeats until all are used) and a few topics matched by keyword (the suit, the mane, the roar, the hunt, naps, cubs, the feast). Anything about price, buying, the moon or the token gets a playful deflection ("I don't do predictions. I do patience."). He never gives financial advice, predicts prices or promises anything.
+- **Filtering.** Questions are trimmed, empty ones are refused, and profanity or slurs (a short ROT13'd list) get "The lion ignores that one.", with the question withheld from the bubble and the card. Nothing is stored or sent anywhere.
+- **The reflection** is the scene drawn every other frame, at a third of the screen's size, from a camera mirrored under the water with a wider lens, then sampled with a wobble and squashed toward the foot of his rock (`SQUASH`). A true mirror would put his reflection below the bottom of the frame.
+- **Reduced motion:** no ambient bubbles; a visitor's question goes straight to the card.
 
 ### Getting around
 

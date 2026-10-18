@@ -151,6 +151,8 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   const next = () => go(index + 1)
   const prev = () => go(index - 1)
   const blocked = () => locked || paused || busy
+  /** Someone is typing in a field (screen 09's question box): the wheel and swipes leave the screen alone. Esc leaves the field. */
+  const typing = () => !!(document.activeElement as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
 
   // ---- wheel / trackpad --------------------------------------------------------
   let acc = 0
@@ -170,7 +172,7 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
       const mag = Math.abs(dy)
       const prevMag = lastMag
       lastMag = mag
-      if (blocked()) {
+      if (blocked() || typing()) {
         acc = 0
         return
       }
@@ -197,7 +199,7 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   window.addEventListener(
     'touchend',
     (e) => {
-      if (!touch || blocked()) return
+      if (!touch || blocked() || typing()) return
       const dx = e.changedTouches[0].clientX - touch.x
       const dy = e.changedTouches[0].clientY - touch.y
       touch = null

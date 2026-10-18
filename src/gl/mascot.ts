@@ -42,8 +42,11 @@ export type ClipName =
 export interface Mascot {
   root: THREE.Group
   uniforms: Record<string, THREE.IUniform>
-  play(name: ClipName, fade?: number): void
+  /** `speed` overrides the clip's usual playback speed (fx.mascot.speed). */
+  play(name: ClipName, fade?: number, speed?: number): void
   current: ClipName | null
+  /** The prepared clip (in place, seamless), for layers that need its average pose; undefined on the placeholder. */
+  clip(name: ClipName): THREE.AnimationClip | undefined
   /** World position of a bone (Mixamo name without the prefix, e.g. "LeftHand"). */
   boneWorld(name: string, out: THREE.Vector3): THREE.Vector3
   /** The bone itself, for props that ride on it (undefined if the rig has no such bone). */
@@ -345,8 +348,10 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       lastPose[i].p.copy(b.position)
     })
 
-  function play(name: ClipName, fade: number = fx.mascot.crossfade) {
-    if (current === name) return
+  function play(name: ClipName, fade: number = fx.mascot.crossfade, speed?: number) {
+    const rate = speed ?? fx.mascot.speed[name] ?? 1
+    // Same clip, another screen: just ease to its speed there (e.g. walking on 04, then 12).
+    if (current === name) return void actions.get(name)?.setEffectiveTimeScale(rate)
     const clip = clips.get(name)
     if (!clip) return console.warn(`lion.glb has no clip "${name}"`)
     let next = actions.get(name)
@@ -356,7 +361,7 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       actions.set(name, next)
     }
     const prev = current ? actions.get(current) : null
-    next.reset().setEffectiveTimeScale(fx.mascot.speed[name] ?? 1).setEffectiveWeight(1).play()
+    next.reset().setEffectiveTimeScale(rate).setEffectiveWeight(1).play()
     // No time warp: it would end the fade with the clip at 1×, undoing its speed.
     if (prev && fade > 0) next.crossFadeFrom(prev, fade, false)
     else actions.forEach((a) => a !== next && a.stop())
@@ -374,6 +379,7 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
     },
     boneWorld: (name, out) => bones.get(name)!.getWorldPosition(out),
     bone: (name) => bones.get(name),
+    clip: (name) => clips.get(name),
     play,
     setOverlay(next, fade = fx.mascot.crossfade) {
       for (const l of layers) {
@@ -861,6 +867,7 @@ function placeholderMascot(reduced: boolean): Mascot {
       return j.getWorldPosition(out)
     },
     bone: (name) => joints.get(name),
+    clip: () => undefined,
     update(dt, time) {
       clock += dt
       pose(dt)
