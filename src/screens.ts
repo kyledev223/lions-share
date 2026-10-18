@@ -300,7 +300,13 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
 
   return SCREENS.map((def, i) => {
     const el = host.children[i] as HTMLElement
-    if (reduced) return { def, el, intro: null, leave() {} }
+    // Headlines set as plain text whenever their letters aren't moving (see .is-still in style.css).
+    const heads = [...el.querySelectorAll('.display')]
+    const still = (on: boolean) => heads.forEach((h) => h.classList.toggle('is-still', on))
+    if (reduced) {
+      still(true)
+      return { def, el, intro: null, leave() {} }
+    }
     const chars = el.querySelectorAll('.line__in .ch')
     const blocks = el.querySelectorAll('.screen__copy [data-in]')
     const aside = el.querySelector('.screen__aside')
@@ -308,8 +314,9 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
     const kickerText = kicker?.textContent ?? ''
 
     const intro = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })
+    intro.call(() => still(false), [], 0)
     // 22ms a letter, squeezed for long headlines so the last one has landed by ~1.45s.
-    intro.from(chars, { yPercent: 118, force3D: false, duration: 0.85, stagger: Math.min(0.022, 0.45 / Math.max(1, chars.length)), ease: 'expo.out' }, 0.13)
+    intro.from(chars, { yPercent: 118, force3D: false, duration: 0.85, stagger: Math.min(0.022, 0.45 / Math.max(1, chars.length)), ease: 'expo.out', onComplete: () => still(true) }, 0.13)
     if (kicker) intro.call(() => scramble(kicker, kickerText, 400, ''), [], 0.11)
     intro.from(blocks, { autoAlpha: 0, y: 22, duration: 0.6, stagger: Math.min(0.12, 0.6 / Math.max(1, blocks.length)), ease: 'power3.out' }, 0.23)
     if (aside) intro.from(aside, { autoAlpha: 0, x: 40, duration: 0.8, ease: 'power3.out' }, 0.43)
@@ -318,6 +325,7 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
     const leave = (dir: number) => {
       intro.pause()
       out?.kill()
+      still(false)
       out = gsap.timeline()
       out.to(chars, { yPercent: 118 * dir, force3D: false, duration: 0.3, stagger: Math.min(0.014, 0.18 / Math.max(1, chars.length)), ease: 'power3.in' }, 0)
       out.to(blocks, { autoAlpha: 0, y: 16 * dir, duration: 0.3, stagger: 0.03, ease: 'power2.in' }, 0.02)
