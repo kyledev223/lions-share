@@ -31,9 +31,10 @@ export interface BootOptions {
  * 3. Enter (~6.2s; the skip button in the corner or Esc cuts it short, a click elsewhere does not):
  *      0.0–0.4  buttons drop away; a low riser starts (with sound)
  *      0.4–3.5  the field spirals into the emblem, which spins up and
- *               brightens; three thick rings lock on round it one by one
- *               (a thump and a flicker each); from 1.4 it charges, pulsing
- *               and trembling harder
+ *               brightens; three thick rings lock on round it in quick
+ *               succession, 0.85–1.55 (a thump and a flicker each); then
+ *               they tumble round it like a gyroscope, faster, tighter and
+ *               hotter, while it charges, pulsing and trembling harder
  *      3.5–3.9  implosion to a point, a beat of darkness, then a
  *               shockwave, a warm white flash and a colour burst (bass hit)
  *      3.9–5.4  hyperspace: streaks, accelerating
@@ -152,12 +153,18 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       // 0.4–3.5: vortex and spin-up; the rings lock on one by one; it charges and trembles.
       .to(es, { vortex: 1, duration: IMPLODE - 0.5, ease: 'power2.in' }, 0.35)
       .to(es, { spin: 1, duration: IMPLODE - 0.4, ease: 'power3.in' }, 0.4)
-      .to(es, { charge: 1, duration: IMPLODE - 1.4, ease: 'power2.in' }, 1.4)
+    // The rings land in a quick burst, one every RING_GAP, starting at FIRST_LOCK.
+    const FIRST_LOCK = 0.85
+    const RING_GAP = 0.35
+    const ALL_ON = FIRST_LOCK + (engine.entry.ringCount - 1) * RING_GAP
+    tl.to(es, { charge: 1, duration: IMPLODE - ALL_ON, ease: 'power2.in' }, ALL_ON)
+      // Once they're all on, they tumble like a gyroscope, faster and tighter until the implosion.
+      .to(es, { gyro: 1, duration: IMPLODE - ALL_ON, ease: 'power2.in' }, ALL_ON)
     for (let i = 0; i < engine.entry.ringCount; i++) {
       // Each ring's points rush in from the scatter, accelerating, and slam into place at `lock`:
       // the flash, the thump and the ring's own flare all land on that moment.
-      const lock = 1.2 + i * 0.9
-      tl.to(es, { rings: i + 1, duration: 0.45, ease: 'power2.in' }, lock - 0.45)
+      const lock = FIRST_LOCK + i * RING_GAP
+      tl.to(es, { rings: i + 1, duration: RING_GAP, ease: 'power2.in' }, lock - RING_GAP)
         .call(() => withSound && music.thump(), [], lock - 0.01)
         .to(post.uFlash, { value: 0.14 + i * 0.075, duration: 0.03, ease: 'none' }, lock - 0.01)
         .to(post.uFlash, { value: 0, duration: 0.3, ease: 'power2.out' }, lock + 0.02)
@@ -200,7 +207,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       if (tl.progress() >= 1) return
       tl.kill()
       toSite()
-      Object.assign(es, { vortex: 1, spin: 1, rings: engine.entry.ringCount, charge: 1, implode: 1, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 })
+      Object.assign(es, { vortex: 1, spin: 1, rings: engine.entry.ringCount, gyro: 1, charge: 1, implode: 1, blast: 0, shock: 0, warp: 0, streaks: 0, fov: 55 })
       post.uFlash.value = post.uBurst.value = 0
       gsap.to([shared.uAssemble, shared.uGather], { value: 1, duration: 0.5, ease: 'power3.out' })
       gsap.to(mascotU.uMaterialize, { value: 1, duration: 0.6, ease: 'power2.out' })
