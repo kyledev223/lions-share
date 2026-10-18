@@ -46,7 +46,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 PYDEPS = os.path.join(ROOT, ".venv-assets", "blender-py")
 
 # Slug -> clip file (already renamed by mascot.mjs). The first one found also provides the mesh.
-CLIPS = ["idle", "sitting-idle", "clapping", "walking", "reaching", "looking-up", "toast", "typing", "looking-at-hand", "waving"]
+CLIPS = ["idle", "sitting-idle", "presenting", "walking", "reaching", "looking-up", "toast", "typing", "looking-at-hand", "greeting"]
 
 # Regions. Colours are sRGB; the fallback is half the named colour, half what the photo shows for that region.
 LABELS = ["mane", "fur", "suit", "shirt", "tie", "shoe"]
@@ -551,8 +551,12 @@ def img_rel(row):
 
 
 cx_img = int(pa * 0 + pb)
-col_mid = rgb[:, max(0, cx_img - 30): cx_img + 30]
-white_rows = np.nonzero((col_mid.mean(2) > 0.8).mean(1) > 0.3)[0]
+strip = slice(max(0, cx_img - 30), cx_img + 30)
+# Only the figure counts (the light studio backdrop would pass for shirt), only neutral whites
+# (not the cream fur of the chin), and only below the head bone.
+shirtish = fg[:, strip] & (lum[:, strip] > 0.72) & (sat[:, strip] < 0.1)
+head_row = int(pc * bone_world("Head")[2] + pd)
+white_rows = np.nonzero(shirtish.mean(1)[:head_row] > 0.3)[0]
 collar_rel = img_rel(white_rows.max()) if len(white_rows) else 0.84
 foot_x = int(pa * bone_world("LeftFoot")[0] + pb)
 foot_col = rgb[:, foot_x - 25: foot_x + 25]
@@ -640,6 +644,8 @@ final[unseen_shirt & (rel < collar_rel - 0.012) & (armw < 0.3)] = SUIT
 nape = unseen_shirt & (rel > collar_rel - 0.03) & (armw < 0.3)
 final[nape] = np.where(headw[nape] > 0.2, MANE, SUIT)
 final[(~seen) & (final == SHOE) & (rel > shoe_rel + 0.008)] = SUIT
+# Fur that spread round the back of a sleeve (away from the hands and head) is sleeve.
+final[(~seen) & (final == FUR) & (handw < 0.3) & (headw < 0.3)] = SUIT
 for _ in range(2):
     cnt = np.zeros((nv, K))
     np.add.at(cnt, (ea, final[eb]), 1)

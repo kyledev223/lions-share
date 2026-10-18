@@ -4,6 +4,7 @@ import '@fontsource/jetbrains-mono/500.css'
 import './style.css'
 
 import gsap from 'gsap'
+import { createAsk } from './ask'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'
 import { initCursor } from './cursor'
@@ -35,6 +36,8 @@ void initLite()
 const views = renderScreens(document.getElementById('screens')!, reduced)
 hydrateToken()
 initSoundControl()
+// Screen 09's question box and live Q&A card; the stage sends the bubbles.
+const ask = createAsk(views.find((v) => v.def.id === 'ask')!.el, reduced)
 
 const canvas = document.getElementById('gl') as HTMLCanvasElement
 const site = document.getElementById('site')!
@@ -71,7 +74,7 @@ const ready: Promise<Engine> = fonts.then(async () => {
   const [mascot, entry, stages] = await Promise.all([
     mascotLoad,
     createEntry(reduced),
-    buildStages({ ring, openMeme: lightbox.showMeme }),
+    buildStages({ ring, openMeme: lightbox.showMeme, ask }),
   ])
   const engine = createEngine(canvas, { stages, entry, mascot }, { reduced, finePointer })
   engine.start()

@@ -1,4 +1,5 @@
 import gsap from 'gsap'
+import { MAX_QUESTION } from './ask'
 
 /**
  * The twelve screens: names, URL hashes, the corner label, and the copy.
@@ -60,6 +61,28 @@ const post = (p: Post) => `
     }
     <footer><time>${esc(p.date)}</time>${p.counts.map((c) => `<span>${esc(c)}</span>`).join('')}</footer>
   </article>`
+
+/**
+ * Screen 09's live Q&A card (ask.ts fills it in): the current question and
+ * answer, with the last few stacked faintly behind it like a thread.
+ */
+const officeHours = () => `
+  <div class="qa">
+    <div class="qa__thread" aria-hidden="true"></div>
+    <article class="post qa__card" aria-label="Office hours: the lion’s latest answer">
+      <header>
+        <span class="post__avatar" style="--hue:356" aria-hidden="true"></span>
+        <span class="post__who"><b>Lion’s Share · Office Hours</b><small>@lionsshare</small></span>
+        <span class="post__net qa__live"><i aria-hidden="true"></i>LIVE</span>
+      </header>
+      <p class="qa__q" hidden></p>
+      <p class="qa__who">PINNED</p>
+      <p class="qa__typing" hidden>Lion is typing<span class="qa__dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+      <p class="post__text qa__a">Office hours are open. Drop a question in the water and I’ll answer whatever floats up. <mark>Most answers are roars.</mark></p>
+      <footer><time>7:30 PM · OFFICE HOURS</time><span>4.1K ROARS</span><span>2.2K REPLIES</span></footer>
+    </article>
+    <p class="visually-hidden qa__live-text" aria-live="polite"></p>
+  </div>`
 
 const LEONA = { name: 'Leona Gold', handle: '@leona.gold', hue: 38 }
 const SHARE = { name: 'Lion’s Share', handle: '@lionsshare', hue: 356 }
@@ -172,15 +195,19 @@ export const SCREENS: ScreenDef[] = [
     sub: 'Thirty minutes on the rock. No question too small.',
     side: 'left',
     html: `
-      ${eyebrow('OFFICE HOURS · @LIONSSHARE ON THE WATERING HOLE')}
+      ${eyebrow('OFFICE HOURS · THE WATERING HOLE')}
       ${head('ASK THE', 'LION.')}
-      ${lede('Questions go in, roars come out. For half an hour he answers everything, as long as it’s about the hunt, the mane or the suit.')}`,
-    aside: post({
-      ...SHARE,
-      text: 'On the rock for the next 30 minutes. Ask me anything. {{No question is too small. Most answers are roars.}}',
-      date: '7:30 PM · OFFICE HOURS',
-      counts: ['4.1K ROARS', '2.2K REPLIES'],
-    }),
+      ${lede('He’s up on the ledge above the watering hole. Drop a question in the water and watch it float up to him. {{Questions go in, roars come out}}, as long as it’s about the hunt, the mane or the suit.')}
+      <form class="ask" data-in autocomplete="off" novalidate>
+        <label class="visually-hidden" for="askInput">Your question for the lion</label>
+        <span class="ask__field">
+          <input id="askInput" type="text" maxlength="${MAX_QUESTION}" placeholder="Ask the lion…" enterkeyhint="send" spellcheck="false" />
+          <span class="ask__count" aria-hidden="true"></span>
+        </span>
+        <button class="btn btn--gold" type="submit">Ask</button>
+      </form>
+      ${note('Answers are for fun. Not financial advice.')}`,
+    aside: officeHours(),
   },
   {
     id: 'token',

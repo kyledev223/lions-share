@@ -30,22 +30,27 @@ import { shared } from './points'
 export type ClipName =
   | 'idle'
   | 'sitting-idle'
-  | 'clapping'
+  | 'presenting'
   | 'walking'
   | 'reaching'
   | 'looking-up'
   | 'toast'
   | 'typing'
   | 'looking-at-hand'
-  | 'waving'
+  | 'greeting'
 
 export interface Mascot {
   root: THREE.Group
   uniforms: Record<string, THREE.IUniform>
-  play(name: ClipName, fade?: number): void
+  /** `speed` overrides the clip's usual playback speed (fx.mascot.speed). */
+  play(name: ClipName, fade?: number, speed?: number): void
   current: ClipName | null
+  /** The prepared clip (in place, seamless), for layers that need its average pose; undefined on the placeholder. */
+  clip(name: ClipName): THREE.AnimationClip | undefined
   /** World position of a bone (Mixamo name without the prefix, e.g. "LeftHand"). */
   boneWorld(name: string, out: THREE.Vector3): THREE.Vector3
+  /** The bone itself, for props that ride on it (undefined if the rig has no such bone). */
+  bone(name: string): THREE.Object3D | undefined
   update(dt: number, time: number): void
   /** World height of the top of his head (for the scan). */
   topY(): number
@@ -53,7 +58,17 @@ export interface Mascot {
   useRenderer(renderer: THREE.WebGLRenderer): void
   /** True while the placeholder figure stands in for lion.glb. */
   placeholder: boolean
+  /**
+   * Layers a pose over the clip (IK and the like), run after the mixer every
+   * frame; any other layer releases. Passing null releases them all. Layers
+   * fade in and out over `fade` seconds, independently, so one can release
+   * while the next settles in; `fade` 0 applies it at once.
+   */
+  setOverlay(overlay: PoseOverlay | null, fade?: number): void
 }
+
+/** A pose layered on top of the clip. `weight` is 0–1 (already eased); blend your changes by it. */
+export type PoseOverlay = (mascot: Mascot, weight: number, dt: number) => void
 
 // ---------------------------------------------------------------------------
 // The hologram, shared by both forms
@@ -184,7 +199,7 @@ function flicker(uniforms: Record<string, THREE.IUniform>, reduced: boolean) {
 }
 
 /** Rough size of lion.glb, for progress when the server sends no Content-Length (compressed responses). */
-const EXPECTED_BYTES = 4.6e6
+const EXPECTED_BYTES = 6.9e6
 
 /**
  * Loads lion.glb; if it isn't there yet (or can't be read), returns the
@@ -297,34 +312,65 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
   skinned.skeleton.bones.forEach((b) => bones.set(b.name.replace(/^mixamorig:?/, ''), b))
   const hips = bones.get('Hips')!
   const head = bones.get('Head')!
+  const neck = bones.get('Neck')!
+  /** 0–1: how far the looking-up lift is applied (eases in and out with the clip). */
+  let lift = 0
 
   // ---- clips ------------------------------------------------------------------
   const mixer = new THREE.AnimationMixer(gltf.scene)
   const clips = new Map<string, THREE.AnimationClip>()
-  for (const clip of gltf.animations) clips.set(clip.name, prepareClip(clip, hips.position.clone(), clip.name !== 'sitting-idle'))
+  for (const raw of gltf.animations) {
+    const cut = CUTS[raw.name as ClipName]
+    const clip = cut ? cutOut(raw, cut[0], cut[1]) : raw
+    clips.set(clip.name, prepareClip(clip, hips.position.clone(), clip.name !== 'sitting-idle', !PING_PONG.has(clip.name as ClipName)))
+  }
   const actions = new Map<string, THREE.AnimationAction>()
   let current: ClipName | null = null
 
-  function play(name: ClipName, fade = 0.6) {
-    if (current === name) return
+  // ---- pose layers ------------------------------------------------------------
+  const layers: { fn: PoseOverlay; w: number; to: number; fade: number }[] = []
+  // The exporter drops tracks that never change, so the mixer doesn't rewrite every bone each
+  // frame. Anything layered on top would pile up in those bones; a bone the mixer left holding
+  // what we ended the last frame with gets the clip's value back before the layers run.
+  const allBones = [...bones.values()]
+  const clipPose = allBones.map((b) => ({ q: b.quaternion.clone(), p: b.position.clone() }))
+  const lastPose = allBones.map(() => ({ q: new THREE.Quaternion(NaN, NaN, NaN, NaN), p: new THREE.Vector3(NaN, NaN, NaN) }))
+  const restoreUntracked = () =>
+    allBones.forEach((b, i) => {
+      if (b.quaternion.equals(lastPose[i].q)) b.quaternion.copy(clipPose[i].q)
+      if (b.position.equals(lastPose[i].p)) b.position.copy(clipPose[i].p)
+      clipPose[i].q.copy(b.quaternion)
+      clipPose[i].p.copy(b.position)
+    })
+  const rememberPose = () =>
+    allBones.forEach((b, i) => {
+      lastPose[i].q.copy(b.quaternion)
+      lastPose[i].p.copy(b.position)
+    })
+
+  function play(name: ClipName, fade: number = fx.mascot.crossfade, speed?: number) {
+    const rate = speed ?? fx.mascot.speed[name] ?? 1
+    // Same clip, another screen: just ease to its speed there (e.g. walking on 04, then 12).
+    if (current === name) return void actions.get(name)?.setEffectiveTimeScale(rate)
     const clip = clips.get(name)
     if (!clip) return console.warn(`lion.glb has no clip "${name}"`)
     let next = actions.get(name)
     if (!next) {
       next = mixer.clipAction(clip)
-      next.setLoop(THREE.LoopRepeat, Infinity)
+      next.setLoop(PING_PONG.has(name) ? THREE.LoopPingPong : THREE.LoopRepeat, Infinity)
       actions.set(name, next)
     }
     const prev = current ? actions.get(current) : null
-    next.reset().setEffectiveWeight(1).play()
-    if (prev && fade > 0) next.crossFadeFrom(prev, fade, true)
+    next.reset().setEffectiveTimeScale(rate).setEffectiveWeight(1).play()
+    // No time warp: it would end the fade with the clip at 1×, undoing its speed.
+    if (prev && fade > 0) next.crossFadeFrom(prev, fade, false)
     else actions.forEach((a) => a !== next && a.stop())
     current = name
   }
 
   const flick = flicker(uniforms, reduced)
   const tmp = new THREE.Vector3()
-  return {
+  const self: Mascot = {
     root,
     uniforms,
     placeholder: false,
@@ -332,9 +378,36 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       return current
     },
     boneWorld: (name, out) => bones.get(name)!.getWorldPosition(out),
+    bone: (name) => bones.get(name),
+    clip: (name) => clips.get(name),
     play,
+    setOverlay(next, fade = fx.mascot.crossfade) {
+      for (const l of layers) {
+        const to = l.fn === next ? 1 : 0
+        // A layer already on its way out keeps its own release time.
+        if (l.to !== to) Object.assign(l, { to, fade })
+      }
+      if (next && !layers.some((l) => l.fn === next)) layers.push({ fn: next, w: 0, to: 1, fade })
+      if (fade <= 0) layers.forEach((l) => (l.w = l.to))
+    },
     update(dt, time) {
       mixer.update(dt)
+      restoreUntracked()
+      for (const l of [...layers]) {
+        const step = l.fade > 0 ? dt / l.fade : 1
+        l.w = l.to > l.w ? Math.min(l.to, l.w + step) : Math.max(l.to, l.w - step)
+        if (l.w > 0) {
+          root.updateMatrixWorld(true)
+          l.fn(self, THREE.MathUtils.smootherstep(l.w, 0, 1), dt)
+        } else if (l.to === 0) layers.splice(layers.indexOf(l), 1)
+      }
+      // "looking-up" is a looking-around idle; lift his gaze toward the summit on top of it.
+      lift += ((current === 'looking-up' ? 1 : 0) - lift) * (1 - Math.exp(-dt / 0.5))
+      if (lift > 0.001) {
+        neck.rotateX(-fx.mascot.lookUp * 0.4 * lift)
+        head.rotateX(-fx.mascot.lookUp * 0.6 * lift)
+      }
+      rememberPose()
       flick(dt, time)
     },
     topY() {
@@ -351,16 +424,52 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       pmrem.dispose()
     },
   }
+  return self
 }
+
+/**
+ * Stretches cut out of clips (seconds, at 1×). toast loses the sip (the glass
+ * rising to his mouth and back), so he just stands holding his drink.
+ */
+const CUTS: Partial<Record<ClipName, [number, number]>> = { toast: [2.43, 7.03] }
+
+/**
+ * Removes [a, b] from a looping clip: it plays from b to the end, then on
+ * from the start to a (the clip already loops, so that join is seamless).
+ * Resampled at 30 fps; the new loop point (a → b) is eased by prepareClip.
+ */
+function cutOut(clip: THREE.AnimationClip, a: number, b: number) {
+  const T = clip.duration
+  const D = T - b + a
+  const n = Math.round(D * 30) + 1
+  const times = Float32Array.from({ length: n }, (_, i) => (i / (n - 1)) * D)
+  const source = (t: number) => (t < T - b ? b + t : t - (T - b))
+  const tracks = clip.tracks.map((track) => {
+    const sample = track.InterpolantFactoryMethodLinear() // quaternion tracks slerp
+    const size = track.getValueSize()
+    const values = new Float32Array(n * size)
+    times.forEach((t, i) => values.set(sample.evaluate(Math.min(T, source(t))), i * size))
+    const Track = track.constructor as new (name: string, times: Float32Array, values: Float32Array) => THREE.KeyframeTrack
+    return new Track(track.name, times, values)
+  })
+  return new THREE.AnimationClip(clip.name, D, tracks)
+}
+
+/**
+ * Clips that don't come back to where they started (reaching ends with his
+ * arm out). Blending their end into their start would snap the arm back, so
+ * they play forward and back instead: reach out, then draw the hand in.
+ */
+const PING_PONG = new Set<ClipName>(['reaching'])
 
 /**
  * Makes a Mixamo clip behave on the site:
  *  - in place: the hips keep their sway but lose any travel (a few clips walk
  *    off or start offset), so every clip stays centred on his spot;
- *  - seamless: the last half second of every track blends into its first
- *    frame, so LoopRepeat wraps without a pop.
+ *  - seamless: the last `fx.mascot.loopEase` seconds of every track ease
+ *    into its first frame, so LoopRepeat wraps without a pop.
  */
-function prepareClip(clip: THREE.AnimationClip, restHips: THREE.Vector3, inPlace: boolean) {
+function prepareClip(clip: THREE.AnimationClip, restHips: THREE.Vector3, inPlace: boolean, seamless: boolean) {
   const hipsTrack = clip.tracks.find((t) => /Hips\.position$/.test(t.name))
   if (hipsTrack) {
     const rest = restHips.toArray()
@@ -387,8 +496,9 @@ function prepareClip(clip: THREE.AnimationClip, restHips: THREE.Vector3, inPlace
     }
   }
 
+  if (!seamless) return clip
   const T = clip.duration
-  const B = Math.min(0.5, T * 0.25)
+  const B = Math.min(fx.mascot.loopEase, T * 0.25)
   const qa = new THREE.Quaternion()
   const qb = new THREE.Quaternion()
   for (const track of clip.tracks) {
@@ -506,15 +616,13 @@ const POSES: Record<ClipName, (t: number) => Pose> = {
     RightForeArm: [-0.95, 0, 0],
     Head: [0.02, Math.sin(t * 0.3) * 0.22, 0],
   }),
-  clapping: (t) => {
-    const c = 0.5 + 0.5 * Math.sin(t * TAU * 2.1)
+  presenting: (t) => {
+    const g = pulse(t, 4.4)
     return {
-      Spine: [0.03, 0, 0],
-      LeftArm: [-0.75, 0, 0.12],
-      LeftForeArm: [-1.05, 0, -0.55 - c * 0.3],
-      RightArm: [-0.75, 0, -0.12],
-      RightForeArm: [-1.05, 0, 0.55 + c * 0.3],
-      Head: [-0.04, Math.sin(t * 0.5) * 0.1, 0],
+      ...relaxed(t),
+      RightArm: [-0.45 - g * 0.25, 0, -0.32 - g * 0.2],
+      RightForeArm: [-1.1, 0, 0.25 + g * 0.2],
+      Head: [0, -0.08 + Math.sin(t * 0.5) * 0.08, 0],
     }
   },
   walking: (t) => {
@@ -572,10 +680,10 @@ const POSES: Record<ClipName, (t: number) => Pose> = {
     Neck: [0.12, 0, 0],
     Head: [0.32, 0.22 + Math.sin(t * 0.6) * 0.04, 0],
   }),
-  waving: (t) => ({
+  greeting: (t) => ({
     ...relaxed(t),
-    RightArm: [-0.15, 0, -2.45],
-    RightForeArm: [0, 0, 0.55 + Math.sin(t * TAU * 1.2) * 0.38],
+    RightArm: [-0.2, 0, -1.25],
+    RightForeArm: [-1.2, 0, 0.2 + Math.sin(t * TAU * 0.6) * 0.18],
     Head: [0, -0.1, 0.04],
   }),
 }
@@ -758,6 +866,8 @@ function placeholderMascot(reduced: boolean): Mascot {
       if (!j) return root.getWorldPosition(out)
       return j.getWorldPosition(out)
     },
+    bone: (name) => joints.get(name),
+    clip: () => undefined,
     update(dt, time) {
       clock += dt
       pose(dt)
@@ -768,5 +878,6 @@ function placeholderMascot(reduced: boolean): Mascot {
       return tmp.y + 0.3 * root.scale.y
     },
     useRenderer() {},
+    setOverlay() {},
   }
 }
