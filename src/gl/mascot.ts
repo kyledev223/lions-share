@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { fx } from '../fx-config'
-import { shared } from './points'
+import { seeded, shared } from './points'
 
 /**
  * The mascot. There is a single one; each screen borrows him (engine.ts
@@ -93,6 +93,14 @@ uniform float uOpacity;
 uniform float uCeiling;
 uniform float uAoDirect;
 uniform float uSheen;
+uniform float uEmber;
+uniform vec3 uEmberColor;
+uniform float uTint;
+uniform vec3 uTintLow;
+uniform vec3 uTintMid;
+uniform vec3 uTintHigh;
+uniform float uAlpha;
+uniform float uGap;
 varying vec3 vW;
 
 float holoHash(vec2 p) {
@@ -108,8 +116,12 @@ float holoFront = uTopY + 0.05 - uMaterialize * holoSpan;
 if (vW.y < holoFront) discard;
 if (uDissolve > 0.0 && holoHash(floor(vW.xy * 160.0) + floor(vW.z * 40.0)) < uDissolve) discard;`
 
-/** Takes `col` (lit colour), `ndv` (|n·v|) and `base` (surface albedo); leaves the hologram in `col`. */
+/**
+ * Takes `col` (lit colour), `ndv` (|n·v|) and `base` (surface albedo); leaves the
+ * hologram in `col` and its opacity in `holoA` (the GLB form draws translucent).
+ */
 const HOLO_END = /* glsl */ `
+float holoA = 1.0;
 {
   // Soft ceiling under the bloom threshold: his lit surface never blooms.
   float m = max(col.r, max(col.g, col.b));
@@ -122,10 +134,19 @@ const HOLO_END = /* glsl */ `
   float lum = dot(base, vec3(0.299, 0.587, 0.114));
   col += uRimColor * uSheen * (1.0 - smoothstep(0.02, 0.1, lum)) * pow(1.0 - ndv, 2.0);
 
-  // Faint horizontal bands drifting upward.
+  // Projected light: his shading remapped onto a red ramp, so he reads as one colour of light, not a
+  // photographed surface. The darks lift into a faint red glow; the highlights go pale.
+  float lit = pow(clamp(dot(col, vec3(0.299, 0.587, 0.114)) / uCeiling, 0.0, 1.0), 0.65);
+  vec3 ramp = lit < 0.5 ? mix(uTintLow, uTintMid, lit * 2.0) : mix(uTintMid, uTintHigh, lit * 2.0 - 1.0);
+  col = mix(col, ramp, uTint);
+
+  // Scan lines drifting upward: dark, see-through gaps between bright lines.
   float band = fract((y - uTime * uBandSpeed) * uBands);
   float bright = smoothstep(0.0, 0.22, band) * smoothstep(1.0, 0.6, band);
   col *= 1.0 - uBandDepth * (1.0 - bright);
+  // Light passes through: the dark parts and the gaps between lines are the most transparent.
+  holoA = mix(uAlpha, 1.0, lit) * (1.0 - uGap * (1.0 - bright));
+  holoA = clamp(holoA + fres * 0.6, 0.0, 1.0);
   // A slower, brighter band that sweeps up every few seconds.
   float sweepY = mix(uFloorY - 0.3, uTopY + 0.3, fract(uTime * 0.11));
   col += uRimColor * uSweep * exp(-pow((y - sweepY) * 8.0, 2.0));
@@ -143,7 +164,11 @@ const HOLO_END = /* glsl */ `
 
   // The scan front glows.
   col += uRimColor * 3.0 * exp(-(y - holoFront) * 28.0) * step(0.001, 1.0 - uMaterialize);
+
+  // Screen changes: a gold shimmer along his silhouette while the embers lift off it.
+  if (uEmber > 0.0) col += uEmberColor * uEmber * pow(1.0 - ndv, 3.0) * (0.55 + 0.45 * sin(uTime * 23.0 + y * 37.0));
   col *= uOpacity;
+  holoA *= uOpacity;
 }`
 
 const GLITCH = /* glsl */ `
@@ -176,7 +201,118 @@ function holoUniforms(reduced: boolean): Record<string, THREE.IUniform> {
     uCeiling: { value: fx.holo.ceiling },
     uAoDirect: { value: fx.holo.aoDirect },
     uSheen: { value: fx.holo.sheen },
+    /** 0–1: the gold shimmer and embers off his silhouette during a screen change. */
+    uEmber: { value: 0 },
+    uEmberColor: { value: new THREE.Color(fx.palette.gold).multiplyScalar(1.6) },
+    uTint: { value: fx.holo.tint },
+    uTintLow: { value: new THREE.Color(fx.palette.deep).multiplyScalar(fx.holo.tintLow) },
+    uTintMid: { value: new THREE.Color(fx.palette.red).multiplyScalar(fx.holo.tintMid) },
+    uTintHigh: { value: new THREE.Color(fx.palette.white).lerp(new THREE.Color(fx.palette.light), 0.5).multiplyScalar(fx.holo.tintHigh) },
+    uAlpha: { value: fx.holo.alpha },
+    uGap: { value: fx.holo.gap },
   }
+}
+
+const EMBER_VERT = /* glsl */ `
+#include <common>
+#include <skinning_pars_vertex>
+uniform float uEmber;
+uniform float uTime;
+attribute vec2 aCorner;
+attribute vec2 aRand;
+varying vec2 vC;
+varying float vA;
+void main() {
+  #include <skinbase_vertex>
+  #include <beginnormal_vertex>
+  #include <skinnormal_vertex>
+  #include <begin_vertex>
+  #include <skinning_vertex>
+  vec4 mv = modelViewMatrix * vec4(transformed, 1.0);
+  vec3 n = normalize(normalMatrix * objectNormal);
+  // Only where the surface turns away from the camera: his outline.
+  float edge = smoothstep(0.42, 0.06, abs(dot(n, normalize(-mv.xyz))));
+  float life = fract(uTime * (0.7 + aRand.x * 0.9) + aRand.y * 9.0);
+  float lift = uEmber * life;
+  mv.xyz += n * lift * (0.03 + 0.09 * aRand.y);
+  mv.y += lift * (0.02 + 0.08 * aRand.x);
+  mv.xy += aCorner * (0.004 + 0.007 * aRand.x) * (1.0 - life * 0.6);
+  gl_Position = projectionMatrix * mv;
+  vC = aCorner;
+  vA = edge * uEmber * sin(3.14159 * life) * (0.6 + 0.4 * aRand.y);
+}`
+
+const EMBER_FRAG = /* glsl */ `
+uniform vec3 uEmberColor;
+varying vec2 vC;
+varying float vA;
+void main() {
+  float r2 = dot(vC, vC);
+  if (r2 > 1.0 || vA <= 0.0) discard;
+  gl_FragColor = vec4(uEmberColor * exp(-r2 * 3.0) * vA, 1.0);
+}`
+
+/**
+ * Gold embers that lift off his outline and settle back during a screen change:
+ * small sprites on vertices sampled from his mesh, skinned to the same skeleton,
+ * so they follow every pose. Shown only while `uEmber` > 0.
+ */
+function emberLayer(skinned: THREE.SkinnedMesh, uniforms: Record<string, THREE.IUniform>, count: number) {
+  const src = skinned.geometry
+  const pos = src.attributes.position
+  const nor = src.attributes.normal
+  const si = src.attributes.skinIndex
+  const sw = src.attributes.skinWeight
+  const rand = seeded(4242)
+  const P = new Float32Array(count * 12)
+  const N = new Float32Array(count * 12)
+  const I = new Float32Array(count * 16)
+  const W = new Float32Array(count * 16)
+  const C = new Float32Array(count * 8)
+  const R = new Float32Array(count * 8)
+  const index: number[] = []
+  const corners = [-1, -1, 1, -1, 1, 1, -1, 1]
+  for (let e = 0; e < count; e++) {
+    const v = Math.floor(rand() * pos.count)
+    const r1 = rand()
+    const r2 = rand()
+    for (let c = 0; c < 4; c++) {
+      const o = e * 4 + c
+      P.set([pos.getX(v), pos.getY(v), pos.getZ(v)], o * 3)
+      N.set([nor.getX(v), nor.getY(v), nor.getZ(v)], o * 3)
+      I.set([si.getX(v), si.getY(v), si.getZ(v), si.getW(v)], o * 4)
+      W.set([sw.getX(v), sw.getY(v), sw.getZ(v), sw.getW(v)], o * 4)
+      C.set([corners[c * 2], corners[c * 2 + 1]], o * 2)
+      R.set([r1, r2], o * 2)
+    }
+    const b = e * 4
+    index.push(b, b + 1, b + 2, b, b + 2, b + 3)
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(P, 3))
+  geo.setAttribute('normal', new THREE.BufferAttribute(N, 3))
+  geo.setAttribute('skinIndex', new THREE.BufferAttribute(I, 4))
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(W, 4))
+  geo.setAttribute('aCorner', new THREE.BufferAttribute(C, 2))
+  geo.setAttribute('aRand', new THREE.BufferAttribute(R, 2))
+  geo.setIndex(index)
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: EMBER_VERT,
+    fragmentShader: EMBER_FRAG,
+    uniforms: { uEmber: uniforms.uEmber, uEmberColor: uniforms.uEmberColor, uTime: uniforms.uTime },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.CustomBlending,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneFactor,
+  })
+  const mesh = new THREE.SkinnedMesh(geo, mat)
+  mesh.frustumCulled = false
+  mesh.visible = false
+  // As his child with no offset of its own, it shares his world matrix, so his bind matrix fits.
+  skinned.add(mesh)
+  mesh.bind(skinned.skeleton, skinned.bindMatrix)
+  return mesh
 }
 
 /** A flicker every few seconds: two quick dips. */
@@ -231,8 +367,20 @@ const GLB_FRAG_END = /* glsl */ `
   float ndv = clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0);
   ${HOLO_END}
   outgoingLight = col;
+  diffuseColor.a = holoA;
 }
 #include <opaque_fragment>`
+
+/** The glitch, the scan and the dissolve, patched into a built-in material so every pass of him agrees on his shape. */
+function patchHolo(shader: THREE.WebGLProgramParametersWithUniforms, uniforms: Record<string, THREE.IUniform>) {
+  Object.assign(shader.uniforms, uniforms)
+  shader.vertexShader = shader.vertexShader
+    .replace('void main() {', `uniform float uGlitch;\nuniform float uTime;\nvarying vec3 vW;\nvoid main() {`)
+    .replace('#include <project_vertex>', `#include <project_vertex>\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;\n${GLITCH}`)
+  shader.fragmentShader = shader.fragmentShader
+    .replace('void main() {', `${HOLO_PARS}\nvoid main() {`)
+    .replace('#include <clipping_planes_fragment>', `${HOLO_START}\n#include <clipping_planes_fragment>`)
+}
 
 function pbrHoloMaterial(src: THREE.MeshStandardMaterial, uniforms: Record<string, THREE.IUniform>) {
   const mat = new THREE.MeshStandardMaterial({
@@ -243,19 +391,28 @@ function pbrHoloMaterial(src: THREE.MeshStandardMaterial, uniforms: Record<strin
     aoMap: src.aoMap,
     aoMapIntensity: 1,
     envMapIntensity: fx.holo.env,
+    // Translucent, drawn over his own depth pass (holoDepth) so only his nearest surface shows.
+    transparent: true,
+    depthFunc: THREE.LessEqualDepth,
   })
   mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms)
-    shader.vertexShader = shader.vertexShader
-      .replace('void main() {', `uniform float uGlitch;\nuniform float uTime;\nvarying vec3 vW;\nvoid main() {`)
-      .replace('#include <project_vertex>', `#include <project_vertex>\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;\n${GLITCH}`)
+    patchHolo(shader, uniforms)
     shader.fragmentShader = shader.fragmentShader
-      .replace('void main() {', `${HOLO_PARS}\nvoid main() {`)
-      .replace('#include <clipping_planes_fragment>', `${HOLO_START}\n#include <clipping_planes_fragment>`)
       .replace('#include <map_fragment>', GLB_FRAG_AO)
       .replace('#include <opaque_fragment>', GLB_FRAG_END)
   }
   mat.customProgramCacheKey = () => 'mascot-holo'
+  return mat
+}
+
+/**
+ * Depth only, no colour: drawn just before him so his translucent surface
+ * doesn't show the arm behind his chest or the far side of his mane.
+ */
+function holoDepth(uniforms: Record<string, THREE.IUniform>) {
+  const mat = new THREE.MeshBasicMaterial({ colorWrite: false, transparent: true })
+  mat.onBeforeCompile = (shader) => patchHolo(shader, uniforms)
+  mat.customProgramCacheKey = () => 'mascot-holo-depth'
   return mat
 }
 
@@ -279,10 +436,17 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
 
   const uniforms = holoUniforms(reduced)
   const material = pbrHoloMaterial(source, uniforms)
-  skinned.material = material
+  // Two passes on one skeleton: the loaded mesh lays down his depth, a twin drawn right after it
+  // carries the hologram. Same world matrix, so the same sort depth; the twin's later id puts it second.
+  skinned.material = holoDepth(uniforms)
+  const surface = new THREE.SkinnedMesh(skinned.geometry, material)
+  surface.frustumCulled = false
+  skinned.add(surface)
+  surface.bind(skinned.skeleton, skinned.bindMatrix)
   source.dispose()
   // Animated far from his bind pose, the rest-pose bounds would cull him by mistake.
   skinned.frustumCulled = false
+  const embers = emberLayer(skinned, uniforms, 2600)
 
   // ---- lights: key and fill ride with the camera, a back light outlines him ----
   const key = new THREE.DirectionalLight(0xfff4ea, fx.holo.key)
@@ -409,6 +573,7 @@ async function loadModel(url: string, reduced: boolean, onProgress?: (fraction: 
       }
       rememberPose()
       flick(dt, time)
+      embers.visible = uniforms.uEmber.value > 0.001
     },
     topY() {
       head.getWorldPosition(tmp)

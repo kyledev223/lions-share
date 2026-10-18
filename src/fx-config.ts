@@ -58,7 +58,7 @@ export const fx = {
   /** Slow handheld "breathing" of the camera. */
   breathing: { amount: 0.03, speed: 0.18 },
 
-  /** The mascot: PBR shading (once lion.glb exists), with the hologram on top. */
+  /** The mascot: PBR shading (once lion.glb exists), projected as a red hologram on top. */
   holo: {
     /** Key light (from the camera's upper left), fill (right), back light (outline). */
     key: 1.6,
@@ -71,22 +71,36 @@ export const fx = {
     /** Brightest his lit surface gets (linear). Below the bloom threshold, so his face and shirt never glow. */
     ceiling: 0.58,
     /** Red sheen on the darkest parts of the mane toward their edges. */
-    sheen: 0,
-    /** Red rim glow strength, and how tight it hugs the silhouette (higher = tighter). */
-    rim: 0.18,
-    rimPower: 8,
-    /** Horizontal scan bands per metre of height. */
-    bands: 46,
-    /** Band darkness, 0–1. */
-    bandDepth: 0.06,
+    sheen: 0.2,
+    /**
+     * How far his own colours give way to projected red light, 0–1 (1 = one
+     * colour, 0 = the photographic lion). The ramp runs deep red in the
+     * shadows, brand red in the mid-tones, pale pink in the highlights; each
+     * stop's brightness is set here.
+     */
+    tint: 0.72,
+    tintLow: 0.3,
+    tintMid: 0.3,
+    tintHigh: 0.62,
+    /** Opacity of his darkest parts, 0–1 (lit parts and the rim go fully solid). */
+    alpha: 0.38,
+    /** How see-through the gaps between scan lines are, 0–1. */
+    gap: 0.55,
+    /** Red rim glow strength, and how tight it hugs the silhouette (higher = tighter). Above the bloom threshold, so it glows. */
+    rim: 0.75,
+    rimPower: 2.6,
+    /** Horizontal scan lines per metre of height. */
+    bands: 64,
+    /** Darkness of the gaps between scan lines, 0–1. */
+    bandDepth: 0.62,
     /** Upward band speed, metres per second. */
     bandSpeed: 0.05,
     /** The slow bright band that sweeps up him every few seconds. */
-    sweep: 0.04,
+    sweep: 0.18,
     /** Seconds between flickers (randomised ±50%). */
-    flickerEvery: 10,
+    flickerEvery: 5,
     /** Depth of a flicker, 0–1. */
-    flicker: 0.14,
+    flicker: 0.3,
     /** Height above the floor (metres) over which his legs fade into the glow, and how far they fade, 0–1. */
     floorFade: 0.36,
     floorGlow: 0.5,
@@ -128,7 +142,7 @@ export const fx = {
     /** Points in the star field. */
     field: 82000,
     /** Points in the lion's head inside the orb. */
-    symbol: 11000,
+    symbol: 16000,
     /** Points in the orb's shell (its band gets about half as many). */
     orb: 16000,
     /** How hard the cursor pushes nearby stars. */
@@ -137,8 +151,47 @@ export const fx = {
     streaks: 2200,
   },
 
-  /** Screen transitions (seconds). */
-  transition: { out: 0.4, in: 0.5, intro: 1.2 },
+  /**
+   * Screen transitions ("the pounce"). Times are seconds from the input. The lion stays on screen:
+   * the camera swings round him while the old stage swirls away, the frame is cut by the claw at
+   * `swap`, and the new stage settles in around him.
+   */
+  transition: {
+    /** The stage changes here, under the claw. */
+    swap: 0.49,
+    /** Input is accepted again. */
+    unlock: 0.95,
+    /** Everything has settled. */
+    end: 1.3,
+    /**
+     * The old pose layer lets go from `releaseAt` over `release` (gone before the swap); his clip starts
+     * crossfading to the next screen's at `at`, over `fade`. `at` is just after `reverseWithin`, so a
+     * change turned back never has to restart his old clip (restarting puts some clips back at frame 0).
+     */
+    clip: { releaseAt: 0.1, release: 0.38, at: 0.31, fade: 0.7 },
+    /** Camera journey, as fractions of his distance / metres at his scale / degrees, at the midpoint. */
+    camera: { pull: 0.35, rise: 0.35, fov: 6, end: 1.25 },
+    /** Points fly out over `out` and settle over `in` (seconds), swirling `swirl` radians round him at most. */
+    flight: { out: [0.1, 0.49] as [number, number], in: [0.49, 1.2] as [number, number], swirl: 1.1 },
+    /** How far props and lights dim at the swap (1 = not at all). */
+    presence: 0.55,
+    /** The claw: how long the hit lasts, centred on `swap`. */
+    claw: 0.15,
+    /** How far the blacks lift toward the wash colour at the midpoint, 0–1. */
+    lift: 0.3,
+    /** Gold embers off his silhouette, rising from and settling back to nothing over this window. */
+    embers: [0.2, 0.98] as [number, number],
+    /** Reduced motion: a plain crossfade. */
+    reducedFade: 0.4,
+    /**
+     * Jumps (the rail, a link, Home/End, more than one screen away): the "sunburst". The frame breaks
+     * into a mane of rings and spokes that draws in toward the centre and twists, cuts to the new
+     * screen at `cut`, and opens back out by `open`.
+     */
+    jump: { cut: 0.45, open: 1.25, twist: 0.14 },
+    /** An opposite flick this soon (seconds) turns the change back instead of queueing another. */
+    reverseWithin: 0.3,
+  },
 }
 
 export type Fx = typeof fx

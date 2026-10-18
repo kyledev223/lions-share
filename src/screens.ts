@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { MAX_QUESTION } from './ask'
+import { scramble } from './scramble'
 
 /**
  * The twelve screens: names, URL hashes, the corner label, and the copy.
@@ -24,8 +25,19 @@ export interface ScreenDef {
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const mark = (s: string) => esc(s).replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>')
-const lines = (...l: string[]) => l.map((t) => `<span class="line"><span class="line__in">${esc(t)}</span></span>`).join('')
-const eyebrow = (s: string) => `<p class="eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> ${esc(s)}</p>`
+/**
+ * Each letter its own span, so headlines rise and drop letter by letter inside their line's mask.
+ * Letters sit in unbreakable word spans, so a narrow screen still wraps between words, never inside one.
+ */
+const letters = (t: string) =>
+  t
+    .split(' ')
+    .map((w) => `<span class="w">${[...w].map((c) => `<span class="ch">${esc(c)}</span>`).join('')}</span>`)
+    .join(' ')
+/** Each line twice: as plain text (shown at rest, so kerning is untouched) and split into letters (shown while moving). */
+const lines = (...l: string[]) =>
+  l.map((t) => `<span class="line" aria-hidden="true"><span class="line__in"><span class="line__plain">${esc(t)}</span><span class="line__split">${letters(t)}</span></span></span>`).join('')
+const eyebrow = (s: string) => `<p class="eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> <span class="eyebrow__t">${esc(s)}</span></p>`
 const head = (...l: string[]) => `<h2 class="display" aria-label="${esc(l.join(' '))}">${lines(...l)}</h2>`
 const lede = (s: string) => `<p class="lede" data-in>${mark(s)}</p>`
 const body = (s: string) => `<p class="body" data-in>${mark(s)}</p>`
@@ -270,8 +282,15 @@ export const SCREENS: ScreenDef[] = [
 export interface ScreenView {
   def: ScreenDef
   el: HTMLElement
-  /** Plays once when the screen arrives (~1.2s): label, headline, then the rest. */
+  /**
+   * Plays when the screen arrives (~1.45s): the eyebrow scrambles in, the headline rises letter
+   * by letter, then the rest fades up. A screen change starts it at the swap (0.49s).
+   */
   intro: gsap.core.Timeline | null
+  /** The copy leaving (~0.35s): the headline drops letter by letter, the rest slides away; +1 forward, −1 back. */
+  leave(dir: number): void
+  /** The visitor flicked back before the change: the leaving copy comes back the way it went. */
+  stay(): void
 }
 
 export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[] {
@@ -285,14 +304,42 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
 
   return SCREENS.map((def, i) => {
     const el = host.children[i] as HTMLElement
-    if (reduced) return { def, el, intro: null }
-    const intro = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })
-    const rising = el.querySelectorAll('.line__in')
-    intro.from(rising, { yPercent: 118, duration: 0.85, stagger: 0.08 }, 0.05)
+    // Headlines set as plain text whenever their letters aren't moving (see .is-still in style.css).
+    const heads = [...el.querySelectorAll('.display')]
+    const still = (on: boolean) => heads.forEach((h) => h.classList.toggle('is-still', on))
+    if (reduced) {
+      still(true)
+      return { def, el, intro: null, leave() {}, stay() {} }
+    }
+    const chars = el.querySelectorAll('.line__in .ch')
     const blocks = el.querySelectorAll('.screen__copy [data-in]')
-    intro.from(blocks, { autoAlpha: 0, y: 22, duration: 0.6, stagger: Math.min(0.12, 0.7 / Math.max(1, blocks.length)), ease: 'power3.out' }, 0.12)
     const aside = el.querySelector('.screen__aside')
-    if (aside) intro.from(aside, { autoAlpha: 0, x: 40, duration: 0.8, ease: 'power3.out' }, 0.35)
-    return { def, el, intro }
+    const kicker = el.querySelector<HTMLElement>('.eyebrow__t')
+    const kickerText = kicker?.textContent ?? ''
+
+    const intro = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' } })
+    intro.call(() => still(false), [], 0)
+    // 22ms a letter, squeezed for long headlines so the last one has landed by ~1.45s.
+    intro.from(chars, { yPercent: 118, force3D: false, duration: 0.85, stagger: Math.min(0.022, 0.45 / Math.max(1, chars.length)), ease: 'expo.out', onComplete: () => still(true) }, 0.13)
+    if (kicker) intro.call(() => scramble(kicker, kickerText, 400, ''), [], 0.11)
+    intro.from(blocks, { autoAlpha: 0, y: 22, duration: 0.6, stagger: Math.min(0.12, 0.6 / Math.max(1, blocks.length)), ease: 'power3.out' }, 0.23)
+    if (aside) intro.from(aside, { autoAlpha: 0, x: 40, duration: 0.8, ease: 'power3.out' }, 0.43)
+
+    let out: gsap.core.Timeline | null = null
+    const leave = (dir: number) => {
+      intro.pause()
+      out?.kill()
+      still(false)
+      out = gsap.timeline()
+      out.to(chars, { yPercent: 118 * dir, force3D: false, duration: 0.3, stagger: Math.min(0.014, 0.18 / Math.max(1, chars.length)), ease: 'power3.in' }, 0)
+      out.to(blocks, { autoAlpha: 0, y: 16 * dir, duration: 0.3, stagger: 0.03, ease: 'power2.in' }, 0.02)
+      if (aside) out.to(aside, { autoAlpha: 0, x: 24, duration: 0.3, ease: 'power2.in' }, 0.04)
+    }
+    const stay = () => {
+      if (!out) return
+      out.eventCallback('onReverseComplete', () => still(true))
+      out.reverse()
+    }
+    return { def, el, intro, leave, stay }
   })
 }

@@ -245,6 +245,81 @@ function prop(scene: THREE.Scene, obj: THREE.Object3D, place: (mascot: Mascot, o
   }
 }
 
+/**
+ * A treasure chest on the floor at `at`, turned `rotY`, front facing +Z: the body with straps and a lock,
+ * the barrel lid hinged open past upright, a heap of gold over the rim, coins spilled and stacked in front
+ * of it (toward -X, the throne side) and a warm glow over it all.
+ */
+function treasureChest(parent: THREE.Object3D, at: THREE.Vector3, rotY: number) {
+  const g = new THREE.Group()
+  g.position.copy(at)
+  g.rotation.y = rotY
+  parent.add(g)
+  const W = 0.36
+  const D = 0.23
+  const H = 0.36
+  const st = { density: 220, jitter: 0.005, size: [0.006, 0.013] as [number, number], glow: 1.0 }
+  const wood = (r: number) => (r < 0.45 ? C.gold : r < 0.75 ? C.white : r < 0.92 ? C.red : C.light)
+  /** One coin: a small ring, tilted to `normal`. */
+  const coinAt = (c: Cloud, p: THREE.Vector3, normal: THREE.Vector3, r = 0.034) =>
+    ring(c, p, r, { density: 260, jitter: 0.002, size: [0.005, 0.01], tint: goldMix, glow: 1.1 }, normal)
+  cloud(g, 106, (c) => {
+    box(c, V(0, H / 2, 0), V(W * 2, H, D * 2), { ...st, tint: wood })
+    volume(c, V(-W, 0.02, D - 0.004), V(W, H - 0.02, D + 0.004), 180, { size: [0.005, 0.01], tint: wood, glow: 0.35 })
+    // Straps over the front and up the sides, a band round the foot, the lock plate.
+    for (const x of [-0.22, 0.22]) polyline(c, [V(x, 0, D + 0.004), V(x, H, D + 0.004), V(x, H, -D)], false, { ...st, density: 260, glow: 1.4, tint: goldMix })
+    for (const y of [0.04, H - 0.035]) polyline(c, [V(-W, y, -D), V(-W, y, D + 0.004), V(W, y, D + 0.004), V(W, y, -D)], false, { ...st, density: 200, tint: goldMix })
+    roundedRect(c, V(0, H - 0.07, D + 0.006), 0.09, 0.11, 0.02, { ...st, density: 320, glow: 1.3, tint: goldMix })
+    ring(c, V(0, H - 0.08, D + 0.008), 0.012, { ...st, density: 900, tint: C.red }, V(0, 0, 1))
+    // The heap: a dome of gold dust over the rim, with coins lying in it.
+    const r = c.rand
+    for (let i = 0, k = n(1000); i < k; i++) {
+      const u = (r() * 2 - 1) * 0.97
+      const w = (r() * 2 - 1) * 0.95
+      const h = 1 - u * u * 0.8 - w * w * 0.7
+      c.add(u * W, H - 0.02 + h * 0.15 + r() * 0.012, w * D, goldMix(r()), 0.005 + r() * 0.01, 0.6 + r() * 0.5)
+    }
+    for (let i = 0; i < 18; i++) {
+      const u = (r() * 2 - 1) * 0.8
+      const w = (r() * 2 - 1) * 0.75
+      const h = 1 - u * u * 0.8 - w * w * 0.7
+      coinAt(c, V(u * W, H - 0.01 + h * 0.15, w * D), V((r() - 0.5) * 1.4, 1, (r() - 0.5) * 1.4))
+    }
+    // Spilled: coins on the floor and leaning on the front, and two stacks.
+    for (let i = 0; i < 16; i++) {
+      const a = r() * Math.PI * 0.9 + Math.PI * 0.45
+      const d = 0.08 + r() * 0.42
+      coinAt(c, V(-W * 0.4 + Math.cos(a) * d, 0.006, D + 0.12 + Math.sin(a) * d * 0.45), V((r() - 0.5) * 0.5, 1, (r() - 0.5) * 0.5))
+    }
+    for (const x of [-0.25, 0.08]) coinAt(c, V(x, 0.045, D + 0.03), V(0, 0.35, 1))
+    for (const [x, z, k] of [[-0.52, D + 0.05, 9], [-0.44, D + 0.2, 6]] as const)
+      for (let i = 0; i < k; i++) coinAt(c, V(x + (r() - 0.5) * 0.008, 0.008 + i * 0.013, z + (r() - 0.5) * 0.008), V(0, 1, 0))
+  }, { scatter: 2, twinkle: 0.55 })
+  // The lid: a half barrel hinged at the back of the rim, thrown open past upright.
+  const lid = new THREE.Group()
+  lid.position.set(0, H, -D)
+  lid.rotation.x = -1.9
+  g.add(lid)
+  cloud(lid, 107, (c) => {
+    const arc = (x: number, s: Parameters<typeof polyline>[3]) => {
+      const pts: THREE.Vector3[] = []
+      for (let i = 0; i <= 14; i++) {
+        const a = (i / 14) * Math.PI
+        pts.push(V(x, Math.sin(a) * D, D + Math.cos(a) * D))
+      }
+      polyline(c, pts, false, s)
+    }
+    for (const x of [-W, W]) arc(x, { ...st, tint: wood })
+    for (const x of [-0.22, 0.22]) arc(x, { ...st, density: 260, glow: 1.4, tint: goldMix })
+    for (let i = 0; i <= 4; i++) {
+      const a = (i / 4) * Math.PI
+      line(c, V(-W, Math.sin(a) * D, D + Math.cos(a) * D), V(W, Math.sin(a) * D, D + Math.cos(a) * D), { ...st, glow: i % 4 ? 0.9 : 1.2, tint: wood })
+    }
+  }, { scatter: 2, twinkle: 0.4 })
+  glow(g, V(0, H + 0.1, 0), 0.9, 'rgba(226,186,96,0.45)', 0.22)
+  return g
+}
+
 // ---------------------------------------------------------------------------
 // 01 THE LION: the throne room
 // ---------------------------------------------------------------------------
@@ -288,7 +363,8 @@ function throneRoom(): Stage {
     line(c, V(-11, 7.2, Z), V(11, 7.2, Z), { density: 30, glow: 0.6 })
     line(c, V(-11, 7.5, Z), V(11, 7.5, Z), { density: 24, glow: 0.45, tint: goldMix })
   }, { scatter: 8, twinkle: 0.4, depthFade: [14, 22] })
-  // The throne, squared up to him: seat, legs, armrests, and a tall back crested with rays like the mane.
+  // The throne, squared up to him: a stepped plinth, a solid base under a deep cushion, broad armrest blocks,
+  // and a tall back between two posts, crested with rays like the mane.
   // Its measurements are THRONE (throne-pose.ts), which also seats him in it.
   const throne = new THREE.Group()
   throne.rotation.y = -0.25
@@ -297,37 +373,74 @@ function throneRoom(): Stage {
     const T = THRONE
     const st = { density: 240, jitter: 0.006, size: [0.006, 0.014] as [number, number], glow: 1.25 }
     const gold = (r: number) => (r < 0.62 ? C.gold : r < 0.9 ? C.white : C.red)
+    // A faint scatter over a face, so the solid parts read as bodies rather than wireframes.
+    const face = (min: THREE.Vector3, max: THREE.Vector3, count: number) => volume(c, min, max, count, { size: [0.005, 0.01], tint: gold, glow: 0.35 })
     const B = T.back
     const W = T.backHalf
-    const depth = T.seatFront - B
-    box(c, V(0, T.seatTop - 0.04, B + depth / 2), V(T.seatHalf * 2, 0.08, depth), { ...st, glow: 1.45, tint: gold })
-    for (const x of [-1, 1]) for (const z of [B + 0.05, T.seatFront - 0.05]) line(c, V(x * (T.seatHalf - 0.04), T.seatTop - 0.08, z), V(x * (T.seatHalf - 0.04), 0.02, z), st)
-    const back = [V(-W, T.seatTop, B), V(-W, 1.86, B)]
-    const tips = 7
-    for (let i = 0; i <= tips * 2; i++) {
-      const x = -W + (2 * W * i) / (tips * 2)
-      const mid = 1 - Math.abs(i - tips) / tips
-      back.push(V(x, i % 2 ? 1.88 : 2.02 + mid * 0.38, B))
+    const front = T.seatFront + 0.02
+    const outer = 0.44
+    const baseTop = T.seatTop - 0.1
+    // Plinth step on the floor, wider and deeper than the throne.
+    box(c, V(0, 0.05, (B - 0.06 + 0.46) / 2), V(0.98, 0.1, 0.46 - B + 0.06), { ...st, glow: 1.0, tint: gold })
+    // Base: a solid block from the step to the cushion, a red panel and a medallion on its front.
+    box(c, V(0, (0.1 + baseTop) / 2, (B + front) / 2), V(outer * 2 - 0.04, baseTop - 0.1, front - B), { ...st, density: 200, glow: 1.1, tint: gold })
+    face(V(-outer + 0.02, 0.1, front - 0.004), V(outer - 0.02, baseTop, front + 0.004), 520)
+    roundedRect(c, V(0, (0.1 + baseTop) / 2, front + 0.004), 0.6, 0.17, 0.04, { ...st, density: 200, glow: 1.1, tint: redMix })
+    ring(c, V(0, (0.1 + baseTop) / 2, front + 0.008), 0.045, { ...st, density: 450, glow: 1.2, tint: gold }, V(0, 0, 1))
+    // Cushion: deep, with a red top.
+    box(c, V(0, baseTop + 0.05, (B + front) / 2), V(T.seatHalf * 2 + 0.04, 0.1, front - B), { ...st, glow: 1.3, tint: gold })
+    roundedRect(c, V(0, T.seatTop + 0.004, (B + front) / 2), T.seatHalf * 2 - 0.04, front - B - 0.06, 0.05, { ...st, density: 180, glow: 1.05, tint: redMix }, FLAT)
+    // Back: posts floor to crest with ball finials, a crest of rays, a shadow line inside it, the red panel, a medallion.
+    const finial = (at: THREE.Vector3, r: number) => {
+      for (const nrm of [V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)]) ring(c, at, r, { ...st, density: 320, glow: 1.05, tint: gold }, nrm)
     }
-    back.push(V(W, 1.86, B), V(W, T.seatTop, B))
-    polyline(c, back, false, { ...st, density: 280, glow: 1.5, tint: gold })
-    roundedRect(c, V(0, 1.2, B - 0.01), W * 1.35, 1.1, 0.08, { ...st, density: 150, glow: 0.95, tint: redMix })
-    // Armrests: a solid rail each (his forearms lie along the top), a post down to the seat, a scroll on the outside.
     for (const s of [-1, 1]) {
-      const x = s * T.armX
-      const len = T.armFront - B
-      box(c, V(x, T.armY - T.armH / 2, B + len / 2), V(T.armW, T.armH, len), { ...st, density: 300, tint: gold })
-      line(c, V(x, T.armY - T.armH, T.armFront - 0.03), V(x, T.seatTop, T.armFront - 0.03), st)
-      ring(c, V(x + s * (T.armW / 2 + 0.004), T.armY - 0.06, T.armFront - 0.05), 0.035, { ...st, density: 600, tint: gold }, V(1, 0, 0))
+      pillar(c, V(s * W, 0.1, B), 0.04, 1.8, { ...st, density: 200, glow: 1.15, tint: gold })
+      finial(V(s * W, 1.96, B), 0.055)
+    }
+    const tips = 9
+    const crest = (inset: number, drop: number) => {
+      const pts = [V(-W + inset, 1.86 - drop, B)]
+      for (let i = 0; i <= tips * 2; i++) {
+        const x = (-W + inset) + (2 * (W - inset) * i) / (tips * 2)
+        const mid = 1 - Math.abs(i - tips) / tips
+        pts.push(V(x, (i % 2 ? 1.88 : 2.02 + mid * 0.38) - drop, B))
+      }
+      pts.push(V(W - inset, 1.86 - drop, B))
+      return pts
+    }
+    polyline(c, crest(0, 0), false, { ...st, density: 280, glow: 1.5, tint: gold })
+    polyline(c, crest(0.07, 0.09), false, { ...st, density: 130, glow: 0.7, tint: gold })
+    line(c, V(-W, T.seatTop + 0.02, B), V(W, T.seatTop + 0.02, B), { ...st, density: 200, tint: gold })
+    roundedRect(c, V(0, 1.2, B - 0.01), W * 1.3, 1.1, 0.08, { ...st, density: 150, glow: 0.95, tint: redMix })
+    ring(c, V(0, 2.03, B + 0.01), 0.08, { ...st, density: 400, glow: 1.2, tint: gold }, V(0, 0, 1))
+    // Armrests: a broad rail each (his forearms lie along its inner half), a solid block down to the base,
+    // a scroll on the outside and a ball finial at the outer front corner, clear of his hand.
+    for (const s of [-1, 1]) {
+      const inner = T.armX - T.armW / 2
+      const railH = T.armH + 0.03
+      const len = T.armFront + 0.02 - B
+      box(c, V(s * (inner + outer) / 2, T.armY - railH / 2, B + len / 2), V(outer - inner, railH, len), { ...st, density: 300, tint: gold })
+      const panelTop = T.armY - railH
+      box(c, V(s * (T.armX + outer) / 2, (baseTop + panelTop) / 2, B + len / 2), V(outer - T.armX, panelTop - baseTop, len - 0.03), { ...st, density: 160, glow: 0.9, tint: gold })
+      face(V(s * outer - 0.004, baseTop, B), V(s * outer + 0.004, panelTop, T.armFront), 260)
+      const scroll = V(s * (outer + 0.006), panelTop - 0.07, T.armFront - 0.07)
+      ring(c, scroll, 0.065, { ...st, density: 400, tint: gold }, V(1, 0, 0))
+      ring(c, scroll, 0.03, { ...st, density: 400, glow: 1.1, tint: gold }, V(1, 0, 0))
+      finial(V(s * (outer - 0.035), T.armY + 0.04, T.armFront - 0.015), 0.035)
     }
   }, { scatter: 2, twinkle: 0.3 })
+  // Beside the throne: his share, a chest of gold with the lid thrown back, coins heaped over the rim and spilled on the floor.
+  treasureChest(scene, V(1.2, 0, -0.2), -0.45)
   const seated = throneArms(throne, matchMedia('(prefers-reduced-motion: reduce)').matches)
   floorGlow(scene, V(0, 0, 0), 1.05, 1.15)
   motes(scene, 105, V(-8, 0, -9), V(8, 6, 3), 1400)
   return {
     id: 'lion',
+    transition: { claw: 'full', wind: [0, 0.4, 0] }, // his throne's rays: the points rise
     scene,
-    camera: { pos: V(-0.95, 1.4, 5.1), target: V(-0.95, 1.0, 0), fov: 38 },
+    // Close in: the crest near the top of the frame, the plinth near the bottom, the chest off his left hand.
+    camera: { pos: V(-0.8, 1.75, 4.3), target: V(-0.8, 1.1, 0), fov: 38 },
     // Back into the throne from where the clip sits him.
     mascot: { pos: V(0, 0, -THRONE.sitBack).applyAxisAngle(V(0, 1, 0), -0.25), rotY: -0.25, clip: 'sitting-idle' },
     enter: (m, instant) => m.setOverlay(seated, instant ? 0 : fx.mascot.crossfade),
@@ -353,9 +466,13 @@ function theName(emblem: Stamp): Stage {
   cloud(coinGroup, 203, (c) => coin(c, emblem, 1.2, 4400, (r) => (r < 0.62 ? C.gold : r < 0.86 ? C.white : C.light), 1.25), { drift: 0.004, twinkle: 0.4 })
   return {
     id: 'name',
+    transition: { claw: 'light', wind: [0.3, 0.5, 0] }, // stars drifting up into the name
     scene,
     camera: { pos: V(0, 0, 8.4), target: V(0, 0, 0), fov: 42 },
     portrait: { pos: V(1.4, 0, 12), target: V(1.4, 0, 0), fov: 52 },
+    // Not in the picture here: he stands below the frame looking up at his name, so the camera
+    // rises away from him on the way in and comes back down to him on the way out.
+    offstage: { pos: V(-1.2, -7, 3.6), rotY: 0, clip: 'looking-up' },
     update(t) {
       title.rotation.y = -0.42 + Math.sin(t * 0.18) * 0.16
       title.rotation.x = -0.32 + Math.sin(t * 0.13) * 0.05
@@ -492,6 +609,7 @@ function onStage(emblem: Stamp): Stage {
   motes(scene, 305, V(-6, HALL, -5), V(6, 6, 2), 1200)
   return {
     id: 'stage',
+    transition: { claw: 'full', wind: [0, 0.6, 0.2], swing: 12 }, // a roar from the hall
     scene,
     // At the crowd's eye level, so the front rows overlap his feet.
     camera: { pos: V(0.95, 1.05, 5.6), target: V(0.95, 1.25, 0), fov: 40 },
@@ -573,6 +691,7 @@ function theHunt(): Stage {
   motes(scene, 403, V(-8, 0, -8), V(8, 5, 3), 1600, goldMix)
   return {
     id: 'hunt',
+    transition: { claw: 'light', wind: [0.6, 0, 0], swing: -10 }, // streaming out behind his stride
     scene,
     camera: { pos: V(-0.9, 1.2, 4.6), target: V(-0.9, 1.05, 0), fov: 38 },
     mascot: { pos: V(0, 0, 0), rotY: -Math.PI / 2, clip: 'walking' },
@@ -646,6 +765,7 @@ function thePride(emblem: Stamp): Stage {
   motes(scene, 522, V(-7, 0, -6), V(7, 5, 3), 1200)
   return {
     id: 'pride',
+    transition: { claw: 'full', wind: [0, 0.2, 0], swing: 10 },
     scene,
     // Close, from the thighs up, like a press shot.
     camera: { pos: V(-0.5, 1.42, 2.95), target: V(-0.5, 1.22, 0), fov: 38 },
@@ -670,37 +790,19 @@ function forYou(emblem: Stamp): Stage {
       ring(c, V(-0.15, 1.6, z), 3.1 + (i % 2) * 0.25, { density: 70, jitter: 0.04, size: [0.01, 0.03], glow: 1.4 }, V(0, 0, 1))
     }
   }, { flow: V(0, 0, 1.2), wrap: V(0, 0, 27), wrapMin: V(0, 0, -24), scatter: 5, twinkle: 0.4, depthFade: [14, 24] })
-  // The halo: the brightest ring, kept behind his head on the line from the camera, so his head and mane
-  // sit in its middle whatever the camera's drift or his breathing.
-  const HALO_R = 0.4
-  const HALO_BACK = 0.5
-  const halo = new THREE.Group()
-  scene.add(halo)
-  const haloPoints = cloud(halo, 602, (c) => ring(c, V(0, 0, 0), HALO_R, { density: 1500, jitter: 0.012, size: [0.006, 0.014], glow: 1.45, tint: (r) => (r < 0.6 ? C.white : r < 0.85 ? C.gold : C.light) }, V(0, 0, 1)), { twinkle: 0.5, scatter: 2 })
-  haloPoints.frustumCulled = false
   // The viewer, for him to reach toward and look at.
   const viewer = new THREE.Object3D()
   viewer.position.copy(CAM)
   scene.add(viewer)
   let him: Mascot | null = null
-  const headAt = new THREE.Vector3()
-  const ray = new THREE.Vector3()
-  haloPoints.onBeforeRender = (_r, _s, camera) => {
-    const cam = camera as THREE.PerspectiveCamera
-    viewer.position.copy(cam.aspect < 0.85 ? PORTRAIT : CAM)
-    if (him) him.boneWorld('Head', headAt).y += 0.1
-    else headAt.set(0, 1.72, 0)
-    ray.subVectors(headAt, cam.position)
-    const dist = ray.length()
-    const k = (dist + HALO_BACK) / dist
-    halo.position.copy(cam.position).addScaledVector(ray, k)
-    halo.scale.setScalar(k)
-    halo.lookAt(cam.position)
-    halo.updateMatrixWorld(true)
-  }
-  cloud(scene, 603, (c) => {
+  const floorRings = cloud(scene, 603, (c) => {
     for (const r of [1.4, 2.6, 4, 5.6]) ring(c, V(0, 0, 0), r, { density: 70, jitter: 0.02, glow: 0.6 })
   }, { scatter: 4 })
+  // Always drawn, so it can follow the framing: the viewer sits where the landscape or portrait camera is.
+  floorRings.frustumCulled = false
+  floorRings.onBeforeRender = (_r, _s, camera) => {
+    viewer.position.copy((camera as THREE.PerspectiveCamera).aspect < 0.85 ? PORTRAIT : CAM)
+  }
   motes(scene, 604, V(-5, 0, -8), V(5, 4, 3), 1200, redMix)
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
   const reaching = reachPose(viewer, reduced)
@@ -716,7 +818,7 @@ function forYou(emblem: Stamp): Stage {
   }, { twinkle: 0.15, scatter: 0.25, drift: 0.0004 })
   giftPoints.frustumCulled = false
   const giftAssemble = { value: 0 }
-  uniformsOf(giftPoints).uAssemble = giftAssemble
+  uniformsOf(giftPoints).uOwn = giftAssemble
   const giftGlow = glow(gift, V(0, 0, -0.01), 0.2, 'rgba(240,120,70,0.7)', 0.3)
   giftGlow.onBeforeRender = () => {} // its opacity follows the gift's own assemble (placeGift)
   giftGlow.material.opacity = 0
@@ -746,6 +848,7 @@ function forYou(emblem: Stamp): Stage {
   }
   return {
     id: 'foryou',
+    transition: { claw: 'light', wind: [0, 0, 0.6] }, // toward you
     scene,
     camera: { pos: CAM, target: V(CAM.x, 1.42, 0), fov: 40 },
     portrait: { pos: PORTRAIT, target: V(PORTRAIT.x, 1.2, 0), fov: 50 },
@@ -802,6 +905,7 @@ function theSummit(emblem: Stamp): Stage {
   motes(scene, 704, V(-7, 0, -8), V(7, 8, 3), 1500, redMix)
   return {
     id: 'summit',
+    transition: { claw: 'full', wind: [0, 0.6, 0], swing: 18, wash: '#5a0a12' }, // up the red beam
     scene,
     camera: { pos: V(0.15, 2.1, 7.6), target: V(0.15, 2.4, 0), fov: 44 },
     mascot: { pos: V(0, 0, 0), rotY: Math.PI, clip: 'looking-up', scale: 0.85 },
@@ -938,6 +1042,7 @@ function cheers(): Stage {
   const held = prop(scene, glass, (m, g) => onHand(m, 'Left', g, GLASS_AT, GLASS_TURN))
   return {
     id: 'cheers',
+    transition: { claw: 'light', wind: [0, 0.35, 0.1], swing: -6, wash: '#4a3410' }, // rising like the fizz
     scene,
     camera: { pos: V(-0.55, 1.62, 1.75), target: V(-0.55, 1.48, 0), fov: 42 },
     portrait: { pos: V(0, 1.55, 2.6), target: V(0, 1.45, 0), fov: 50 },
@@ -955,7 +1060,7 @@ function cheers(): Stage {
 function phone(seed: number) {
   const g = new THREE.Group()
   cloud(g, seed, (c) => {
-    roundedRect(c, V(0, 0, 0), 0.08, 0.155, 0.012, { density: 3000, jitter: 0.0012, size: [0.003, 0.005], tint: (r) => (r < 0.55 ? C.light : C.white), glow: 2.2 })
+    roundedRect(c, V(0, 0, 0), 0.08, 0.155, 0.012, { density: 2400, jitter: 0.0012, size: [0.003, 0.005], tint: (r) => (r < 0.7 ? C.light : C.white), glow: 1.5 })
     volume(c, V(-0.035, -0.07, 0.002), V(0.035, 0.07, 0.004), 1400, { size: [0.002, 0.004], tint: (r) => (r < 0.7 ? C.red : C.light), glow: 2.8 })
   }, { twinkle: 0.4, scatter: 1 })
   return g
@@ -1071,6 +1176,46 @@ function ledge(scene: THREE.Scene, foot: number) {
   return body
 }
 
+/**
+ * How he holds the phone on 09. The typing clip cups his paws together, the left palm facing the right
+ * with its fingers curled and the right fingers tapping into it, so a phone lying flat on the palm sits
+ * inside both paws and edge-on to the viewer. Instead it stands up in the cupped paws: placed from the
+ * left hand (out from the palm `palm`, along the fingers `along`, then up `up`, in metres at his 1.9m
+ * scale), and turned so its screen faces between his eyes and the viewer (`toFace`: 0 = straight at
+ * the viewer, 1 = straight at his eyes), upright.
+ */
+const PHONE = { scale: 1.15, palm: 0.06, along: 0.07, up: 0.075, toFace: 0.45 }
+const phoneHand = {
+  q: new THREE.Quaternion(),
+  p: new THREE.Vector3(),
+  s: new THREE.Vector3(),
+  head: new THREE.Vector3(),
+  face: new THREE.Vector3(),
+  side: new THREE.Vector3(),
+  up: new THREE.Vector3(),
+  basis: new THREE.Matrix4(),
+}
+function holdPhone(m: Mascot, phoneObj: THREE.Object3D) {
+  const bone = m.bone('LeftHand')
+  if (!bone || m.placeholder) return onHand(m, 'Left', phoneObj, V(0, 0.06, 0.025))
+  const h = phoneHand
+  const k = m.root.scale.x
+  bone.updateWorldMatrix(true, false)
+  bone.matrixWorld.decompose(h.p, h.q, h.s)
+  // Mixamo hand bones: fingers along +Y, palm facing +Z.
+  phoneObj.position
+    .copy(h.p)
+    .addScaledVector(h.face.set(0, 0, 1).applyQuaternion(h.q), PHONE.palm * k)
+    .addScaledVector(h.face.set(0, 1, 0).applyQuaternion(h.q), PHONE.along * k)
+  phoneObj.position.y += PHONE.up * k
+  // The screen faces a blend of his eyes and the viewer (his forward); the phone stands upright.
+  m.boneWorld('Head', h.head).sub(phoneObj.position).normalize()
+  h.face.set(Math.sin(m.root.rotation.y), 0, Math.cos(m.root.rotation.y)).lerp(h.head, PHONE.toFace).normalize()
+  h.up.set(0, 1, 0).addScaledVector(h.face, -h.face.y).normalize()
+  h.side.crossVectors(h.up, h.face)
+  phoneObj.quaternion.setFromRotationMatrix(h.basis.makeBasis(h.side, h.up, h.face))
+}
+
 function askTheLion(link: AskLink): Stage {
   const scene = baseScene()
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -1083,10 +1228,8 @@ function askTheLion(link: AskLink): Stage {
 
   // His phone, glowing red: a light that catches his paw and muzzle, and a soft halo that flares when a bubble pops.
   const device = phone(922)
-  device.scale.setScalar(1.3)
-  // Lying in his left palm, long side along his fingers, screen facing out of the palm.
-  const PHONE_AT = V(0, 0.06, 0.025)
-  const held = prop(scene, device, (m, d) => onHand(m, 'Left', d, PHONE_AT))
+  device.scale.setScalar(PHONE.scale)
+  const held = prop(scene, device, holdPhone)
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softGlow(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color('#ff2a3a'), opacity: 0 }))
   const shine = new THREE.PointLight('#ff2638', 0, 1.1, 2)
   // In the scene from the start, so the warm-up compiles his shader with this light.
@@ -1125,6 +1268,7 @@ function askTheLion(link: AskLink): Stage {
 
   return {
     id: 'ask',
+    transition: { claw: 'light', wind: [0, -0.7, 0], swing: 8 }, // dropping like water into the pool
     scene,
     // Lower and closer than the other screens, so the ledge stands up out of the water and the pool fills the bottom third.
     camera: { pos: V(-0.6, 1.0, 4.4), target: V(-0.6, 0.5, 0), fov: 40 },
@@ -1342,7 +1486,7 @@ function theToken(emblem: Stamp, lion: Stamp): Stage {
   const held = new THREE.Group()
   const coinPoints = cloud(held, 1005, (c) => heroCoin(c, lion, R), { twinkle: 0.3, scatter: 0.45, drift: 0.0004 })
   const coinAssemble = { value: 0 }
-  uniformsOf(coinPoints).uAssemble = coinAssemble
+  uniformsOf(coinPoints).uOwn = coinAssemble
   const coinGlow = glow(held, V(0, 0, -0.02), R * 5, 'rgba(255,190,90,0.85)', 0)
   coinGlow.onBeforeRender = (_r, _s, camera) => viewer.position.copy(camera.position)
   const shine = glint(R)
@@ -1395,6 +1539,7 @@ function theToken(emblem: Stamp, lion: Stamp): Stage {
   hide()
   return {
     id: 'token',
+    transition: { claw: 'full', wind: [0, 0.3, 0], swing: -14, wash: '#4a3812' }, // gold
     scene,
     camera: { pos: V(-0.9, 1.35, 4.7), target: V(-0.9, 1.15, 0), fov: 38 },
     // The pose is a layer over the idle clip (trophy.ts): his breathing stays, the arm holds.
@@ -1438,6 +1583,7 @@ function theMemes({ ring: memeRing, openMeme }: SceneDeps): Stage {
   }))
   return {
     id: 'memes',
+    transition: { claw: 'light', wind: [0.3, 0.15, 0], swing: 10 }, // round with the ring
     scene,
     camera: { pos: V(-0.55, 1.75, 6.4), target: V(-0.55, 1.2, 0), fov: 40 },
     portrait: { pos: V(0, 2.1, 9.5), target: V(0, 1.2, 0), fov: 52 },
@@ -1445,6 +1591,8 @@ function theMemes({ ring: memeRing, openMeme }: SceneDeps): Stage {
     clickables,
     update(_t, dt) {
       memeRing.update(dt)
+      // Shrinks back toward him while a screen change is under way (exactly 0.78 at rest).
+      memeRing.group.scale.setScalar(0.78 * THREE.MathUtils.lerp(0.55, 1, THREE.MathUtils.smoothstep(shared.uAssemble.value, fx.transition.presence, 1)))
     },
   }
 }
@@ -1498,13 +1646,12 @@ void main() {
 function joinThePride(emblem: Stamp): Stage {
   const scene = baseScene()
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-  // From hip height, a little below his eyeline and looking slightly up, knees to crown, right of centre.
-  const CAM = V(-0.62, 1.0, 3.0)
+  // From hip height, looking very slightly up: the whole of him, head to shoes, right of centre.
+  const CAM = V(-0.92, 1.03, 5.0)
   // Phones: the whole of him in the top half, above the copy.
   const PORTRAIT = V(0, 1.0, 5.8)
-  // He faces the camera, then turns this much more toward screen left, so he isn't flat-on.
-  const TURN = 0.21
-  const ROT_Y = Math.atan2(CAM.x, CAM.z) - TURN
+  // He walks straight at the camera.
+  const ROT_Y = Math.atan2(CAM.x, CAM.z)
   /** Playback speed of the walk here: a steady, unhurried stride. */
   const SPEED = 0.85
   /** His size grows 3% over 10s and eases back over 10s, so the approach loops without a seam. */
@@ -1513,9 +1660,9 @@ function joinThePride(emblem: Stamp): Stage {
 
   // The emblem, far back and dimmed, so he stands out against it.
   const sym = new THREE.Group()
-  sym.position.set(0.2, 2.5, -7.5)
+  sym.position.set(0, 2.4, -7.5)
   scene.add(sym)
-  cloud(sym, 1201, (c) => stamp(c, emblem, 6.6, { count: 13000, depth: 0.3, edge: 0.6, size: [0.012, 0.026], tint: redMix, glow: 0.66 }), { drift: 0.008, twinkle: 0.5, scatter: 7 })
+  cloud(sym, 1201, (c) => stamp(c, emblem, 7.6, { count: 13000, depth: 0.3, edge: 0.6, size: [0.012, 0.026], tint: redMix, glow: 0.66 }), { drift: 0.008, twinkle: 0.5, scatter: 7 })
 
   // The runway: rows across the floor in dashes of white and gold, a few red sparks.
   const X0 = -16
@@ -1573,8 +1720,9 @@ function joinThePride(emblem: Stamp): Stage {
   const hips = new THREE.Vector3()
   return {
     id: 'join',
+    transition: { claw: 'full', wind: [0, 0, 0.6], swing: -8 }, // walking out toward you
     scene,
-    camera: { pos: CAM, target: V(CAM.x, 1.24, 0), fov: 31 },
+    camera: { pos: CAM, target: V(CAM.x, 1.17, 0), fov: 29.7 },
     portrait: { pos: PORTRAIT, target: V(PORTRAIT.x, -0.3, 0), fov: 50 },
     mascot: { pos: V(0, 0, 0), rotY: ROT_Y, clip: 'walking', speed: SPEED },
     update(t, dt) {

@@ -178,8 +178,7 @@ export function textStamp(lines: string[], weight = 900, px = 220): Stamp {
   return stampFromCanvas(cv)
 }
 
-/** Rasterises an SVG string (e.g. the emblem) for sampling. */
-export async function svgStamp(svg: string, size = 512): Promise<Stamp> {
+async function rasterSvg(svg: string, size: number) {
   const img = new Image()
   img.src = URL.createObjectURL(new Blob([svg.replace(/currentColor/g, '#fff')], { type: 'image/svg+xml' }))
   await img.decode()
@@ -187,7 +186,53 @@ export async function svgStamp(svg: string, size = 512): Promise<Stamp> {
   cv.width = cv.height = size
   cv.getContext('2d', { willReadFrequently: true })!.drawImage(img, 0, 0, size, size)
   URL.revokeObjectURL(img.src)
-  return stampFromCanvas(cv)
+  return cv
+}
+
+/** Rasterises an SVG string (e.g. the emblem) for sampling. */
+export async function svgStamp(svg: string, size = 512): Promise<Stamp> {
+  return stampFromCanvas(await rasterSvg(svg, size))
+}
+
+export interface Relief extends Stamp {
+  /** How far in from the nearest edge, as a share of the stamp's width (0 outside and on the outline). */
+  inset(x: number, y: number): number
+}
+
+/** A stamp that also knows how deep inside its shape each spot is, for bevelled reliefs. */
+export async function svgRelief(svg: string, size = 512): Promise<Relief> {
+  const cv = await rasterSvg(svg, size)
+  const data = cv.getContext('2d')!.getImageData(0, 0, size, size).data
+  // Chamfer distance to the nearest outside pixel, two passes.
+  const d = new Float32Array(size * size)
+  for (let i = 0; i < d.length; i++) d[i] = data[i * 4 + 3] > 110 ? 1e9 : 0
+  const D = Math.SQRT2
+  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= size || y >= size ? 0 : d[y * size + x])
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const i = y * size + x
+      if (d[i]) d[i] = Math.min(d[i], at(x - 1, y) + 1, at(x, y - 1) + 1, at(x - 1, y - 1) + D, at(x + 1, y - 1) + D)
+    }
+  for (let y = size - 1; y >= 0; y--)
+    for (let x = size - 1; x >= 0; x--) {
+      const i = y * size + x
+      if (d[i]) d[i] = Math.min(d[i], at(x + 1, y) + 1, at(x, y + 1) + 1, at(x + 1, y + 1) + D, at(x - 1, y + 1) + D)
+    }
+  return {
+    ...stampFromCanvas(cv),
+    inset(x, y) {
+      // Bilinear, so slopes taken from it come out smooth.
+      const fx = (x + 0.5) * size - 0.5
+      const fy = (0.5 - y) * size - 0.5
+      const x0 = Math.floor(fx)
+      const y0 = Math.floor(fy)
+      const tx = fx - x0
+      const ty = fy - y0
+      const top = at(x0, y0) * (1 - tx) + at(x0 + 1, y0) * tx
+      const bottom = at(x0, y0 + 1) * (1 - tx) + at(x0 + 1, y0 + 1) * tx
+      return (top * (1 - ty) + bottom * ty) / size
+    },
+  }
 }
 
 export interface Fill extends Stroke {

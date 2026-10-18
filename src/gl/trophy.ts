@@ -2,24 +2,25 @@ import * as THREE from 'three'
 import { PoseMemory, setWorldQuaternion, SIDES, twoBone } from './ik'
 import type { Mascot, PoseOverlay } from './mascot'
 
-/** The held pose on screen 10: the coin raised in his right fist, like a trophy. */
+/** The held pose on screen 10: the coin standing on his open right palm, held up and out to show it. */
 export const TROPHY = {
-  /** Where the right wrist goes, in his own frame (x = his left, y up, z forward; m): out to his right, at head height. */
-  wrist: [-0.4, 1.63, 0.12] as [number, number, number],
-  /** Where the elbow points, from the shoulder (his frame, m): out to his right, down and a little back. */
-  elbow: [-0.6, -0.35, -0.05] as [number, number, number],
-  /** The fist: fingers on along the forearm, tipped back this much at the wrist (radians); the palm faces
-   *  between his head (0) and straight forward (π/2). */
-  wristBack: 0.12,
-  palmForward: 1.35,
-  /** Per finger joint, added to the clip's relaxed curl: a closed fist round the coin. */
-  curl: [1.15, 1.35, 0.9],
+  /** Where the right wrist goes, in his own frame (x = his left, y up, z forward; m): forward and out to his right, at shoulder height. */
+  wrist: [-0.36, 1.45, 0.24] as [number, number, number],
+  /** Where the elbow points, from the shoulder (his frame, m): down, out to his right and a little back, like a waiter's tray arm. */
+  elbow: [-0.3, -0.6, -0.12] as [number, number, number],
+  /** The open paw, palm up: the fingers point forward, turned out to his right this much (radians) and tipped up a
+   *  little; the palm tilts this much toward the viewer, so the coin on it faces the camera. */
+  fingersOut: 0.6,
+  fingersUp: 0.1,
+  palmToViewer: 0.4,
+  /** Per finger joint, from the clip's relaxed curl: eased open, the tips cupped a touch round the coin's edge. */
+  curl: [-0.45, -0.4, -0.2],
   /** Share of the hand's roll the forearm takes, so the wrist doesn't wring. */
   forearmShare: 0.5,
-  /** Fist drift (m): a few millimetres, slow. */
+  /** Hand drift (m): a few millimetres, slow. */
   drift: 0.003,
-  /** Right collarbone lifted with the raised arm (radians). */
-  shoulderUp: 0.12,
+  /** Right collarbone lifted a touch with the raised arm (radians). */
+  shoulderUp: 0.04,
 
   /** Body: weight on his left leg, his left hip out and up; the spine counters it so the shoulders stay level. */
   hipShift: 0.028,
@@ -38,7 +39,7 @@ export const TROPHY = {
   /** The most he turns his head from straight ahead (radians), and how far up or down he may look. */
   yawLimit: 1.0,
   pitchUp: 0.42,
-  pitchDown: 0.12,
+  pitchDown: 0.25,
   /** Chin lift on top of the gaze (radians). */
   chin: 0.07,
   /** Every [a, b] seconds he turns to the camera: over `turn` seconds, holds `hold` seconds, turns back. */
@@ -53,10 +54,12 @@ export const TROPHY = {
   breathShoulders: 0.012,
 }
 
-/** The coin: its radius (m), and its centre in the right hand's frame (+Y down the fingers, +Z out of the palm). */
+/** The coin: its radius (m); where its lower edge rests, in the right hand's frame (+Y down the fingers, +Z out
+ *  of the palm: the middle of the palm, on its surface); and how far it stands clear of the palm (m). */
 export const COIN = {
   radius: 0.1,
-  at: new THREE.Vector3(-0.012, 0.118, -0.035),
+  rest: new THREE.Vector3(0, 0.07, 0.03),
+  gap: 0.004,
 }
 
 const UP = new THREE.Vector3(0, 1, 0)
@@ -99,25 +102,28 @@ function meanPose(m: Mascot, clip: THREE.AnimationClip, names: string[]) {
   return { rot, hipsAt }
 }
 
-/** The coin's centre (world), from his right hand. */
+/** The coin's centre (world): standing upright on his right palm. */
 export function coinPoint(m: Mascot, out: THREE.Vector3) {
   const hand = m.bone('RightHand')
+  const k = m.root.scale.x
   if (!hand || m.placeholder) {
     m.boneWorld('RightHand', out)
-    return out.setY(out.y + 0.12)
+    return out.setY(out.y + 0.12 * k)
   }
   hand.updateWorldMatrix(true, false)
   hand.matrixWorld.decompose(out, _q, _s)
-  return out.add(_s.copy(COIN.at).multiplyScalar(m.root.scale.x).applyQuaternion(_q))
+  out.add(_s.copy(COIN.rest).multiplyScalar(k).applyQuaternion(_q))
+  return out.addScaledVector(UP, (COIN.radius + COIN.gap) * k)
 }
 
 /**
- * Holds the coin up in his right fist over the idle clip, held at its
- * average pose with a slow breath of its own: upper arm out to his side, elbow bent about 90°, fist at head
- * height clear of his mane; weight on his left leg with the hip out, chest
- * up, shoulders back. He looks at the coin, chin up, and every 6–9 s turns
- * slowly to the camera for a couple of seconds and back. `viewer` is an
- * object kept at the camera.
+ * Holds the coin up on his open right palm over the idle clip, held at its
+ * average pose with a slow breath of its own: upper arm down and out, elbow
+ * bent, forearm reaching forward and out to his right, the paw palm up at
+ * shoulder height with the coin standing on it; weight on his left leg with
+ * the hip out, chest up, shoulders back. He looks at the coin, chin up, and
+ * every 6–9 s turns slowly to the camera for a couple of seconds and back.
+ * `viewer` is an object kept at the camera.
  */
 export function trophyPose(viewer: THREE.Object3D, reduced: boolean): PoseOverlay {
   const P = TROPHY
@@ -193,13 +199,13 @@ export function trophyPose(viewer: THREE.Object3D, reduced: boolean): PoseOverla
       setWorldQuaternion(sh, _q)
     })
 
-    // ---- the raised arm: two-bone IK to the wrist target -------------------------------
+    // ---- the arm: two-bone IK to the wrist target -------------------------------------
     const arm = bone('RightArm')
     const fore = bone('RightForeArm')
     const hand = bone('RightHand')
     fore.getWorldQuaternion(fkFore)
     hand.getWorldQuaternion(fkHand)
-    // The fist holds its place in his frame (the elbow takes up his breathing), with a slow drift of a few mm.
+    // The hand holds its place in his frame (the elbow takes up his breathing), with a slow drift of a few mm.
     const t = reduced ? 0 : clock
     const wrist = toWorld(
       P.wrist[0] + Math.sin(t * 0.61) * P.drift,
@@ -210,10 +216,11 @@ export function trophyPose(viewer: THREE.Object3D, reduced: boolean): PoseOverla
     const pole = shoulderW.clone().add(dir(...P.elbow))
     twoBone(arm, fore, hand, wrist, pole)
 
-    // ---- the fist: fingers on along the forearm, palm toward his head and forward ----------
-    const forearm = hand.getWorldPosition(new THREE.Vector3()).sub(fore.getWorldPosition(new THREE.Vector3())).normalize()
-    const palmWant = hisLeft.clone().multiplyScalar(Math.cos(P.palmForward)).addScaledVector(fwd, Math.sin(P.palmForward))
-    const along = forearm.clone().addScaledVector(palmWant, -Math.sin(P.wristBack)).normalize()
+    // ---- the open paw, palm up: fingers forward and out, the palm tipped toward the viewer -------
+    const along = fwd.clone().multiplyScalar(Math.cos(P.fingersOut)).addScaledVector(hisLeft, -Math.sin(P.fingersOut))
+    along.addScaledVector(UP, Math.sin(P.fingersUp)).normalize()
+    const facing = viewer.position.clone().sub(wrist).setY(0).normalize()
+    const palmWant = UP.clone().multiplyScalar(Math.cos(P.palmToViewer)).addScaledVector(facing, Math.sin(P.palmToViewer))
     const palm = palmWant.addScaledVector(along, -palmWant.dot(along)).normalize()
     _m.makeBasis(new THREE.Vector3().crossVectors(along, palm), along, palm)
     const handQ = new THREE.Quaternion().setFromRotationMatrix(_m)
