@@ -1,8 +1,8 @@
 # Lion's Share ($ROAR)
 
-*Take the lion's share.*
+*Hold $ROAR. Take the lion's share.*
 
-A twelve-screen, full-viewport site for a **fictional** community art project. No real token, contract, company or people are involved. Every quote comes from a made-up lion.
+A twelve-screen, full-viewport site that explains the $ROAR airdrops: holders at each snapshot receive a share, sent straight to their wallets. Every figure on the site (allocation, cadence, next snapshot, minimum, cap, reserve wallet, past rounds) comes from `src/config.ts`; anything not set yet reads "TBA". There are no made-up people, quotes or engagement counts.
 
 Every environment is built from glowing points: outlines of rooms, floors, props, charts, text and the emblem, mostly white and red with gold accents, under soft bloom, fine film grain and a little colour fringing toward the edges. The mascot is a lion in a suit, shown as a hologram, with a different animation on each screen. The site opens on a star field around a glass orb of points with the lion's head inside. Built with Vite, vanilla TypeScript, Three.js and GSAP. The music is generated in the browser and the fonts are bundled.
 
@@ -73,7 +73,8 @@ index.html              canvas, loader, entry, HUD, lightbox
 src/
   main.ts               boot order and wiring
   fx-config.ts          EVERY strength for the look: palette, bloom, grain, scan, fringing, hologram, particle budget
-  screens.ts            the twelve screens: names, hashes, corner labels, all the copy, the post cards
+  screens.ts            the twelve screens: names, hashes, corner labels, all the copy, the announcement cards
+  airdrop.ts            the airdrop figures worded from config (TBA when unset), the screen 04 countdown
   nav.ts                one gesture = one screen (wheel, trackpad, keys, swipe, rail, hashes)
   boot.ts               loader → entry → the enter sequence
   brand/symbol.svg      the emblem (also the favicon, the entry, screens 03, 07, 10, 12)
@@ -95,9 +96,10 @@ src/
     watering-hole.ts    screen 09: the pool (points, ripples, edge glow, mist, reflection), the question bubbles, his glance
   cursor.ts             ring + dot cursor (shows DRAG over the meme ring)
   lightbox.ts           meme viewer
+  disclaimer-sheet.ts   screen 12 on phones: the "Read more" sheet with the full disclaimer
   ask.ts                screen 09's live Q&A card and question box
-  content/lion-answers.ts  the lion's answers, the topics they match, the profanity filter, the questions that rise on their own
-  config.ts             contract address, links, stats
+  content/lion-answers.ts  the lion's airdrop FAQ answers, the topics they match, the profanity filter, the questions that rise on their own
+  config.ts             contract address, links, token facts, the airdrop block, the disclaimer
   token.ts              turns config into controls (greyed out until a value is set)
   audio.ts              generated music, the enter riser and bass hit, the music pill
   lite.ts               decides when lite mode is on
@@ -116,29 +118,29 @@ public/assets/lion/     lion.glb, written by npm run mascot
 
 | # | Hash | Screen | Mascot | Environment (all points) |
 |---|---|---|---|---|
-| 01 | `#lion` | The lion | sitting-idle, on a throne in a red floor ring | a throne room: columns, pointed windows, red banners, a dais and a runner |
+| 01 | `#hold` | Hold $ROAR | sitting-idle, on a throne in a red floor ring | a throne room: columns, pointed windows, red banners, a dais and a runner |
 | 02 | `#name` | Why the name | — | "THE LION'S SHARE" in giant 3D points, slowly turning; a glowing gold coin rising at the bottom edge |
-| 03 | `#stage` | On stage | presenting on a raised round riser, a mic stand beside him | spotlight cone, a crowd of gold-dust heads and shoulders all round the riser, a dot-matrix screen showing the emblem |
-| 04 | `#hunt` | The hunt | walking, side view | a savanna horizon drawn in candlesticks, an acacia, a low striped sun; the floor scrolls under him |
-| 05 | `#pride` | The pride | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
-| 06 | `#foryou` | For you | idle with a held reach: palm up toward the viewer, offering a small glowing lion crest; head turned to camera, framed mid-thigh up | a tunnel of rings, the brightest ring kept round his head as a halo |
-| 07 | `#summit` | The summit | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
-| 08 | `#cheers` | Cheers | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
-| 09 | `#ask` | Ask the lion: the Watering Hole | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
+| 03 | `#how` | How it works | presenting on a raised round riser, a mic stand beside him | spotlight cone, a crowd of gold-dust heads and shoulders all round the riser, a dot-matrix screen showing the emblem |
+| 04 | `#snapshots` | Snapshots (live countdown) | walking, side view | a savanna horizon drawn in candlesticks, an acacia, a low striped sun; the floor scrolls under him |
+| 05 | `#rules` | The rules | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
+| 06 | `#holders` | Every holder | idle with a held reach: palm up toward the viewer, offering a small glowing lion crest; head turned to camera, framed mid-thigh up | a tunnel of rings, the brightest ring kept round his head as a halo |
+| 07 | `#proof` | Nothing hidden (reserve wallet) | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
+| 08 | `#drops` | Drops so far (round history) | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
+| 09 | `#ask` | Ask the lion: airdrop FAQ | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
 | 10 | `#token` | The token | idle, held still with the coin standing on his open right palm, held up at shoulder height; looks at it, now and then at you | drifting gold coins, the emblem (up and to the right, so the coin reads against dark space) |
-| 11 | `#memes` | The memes | idle | the meme ring around him, gold dust on the floor |
+| 11 | `#memes` | Spread the roar | idle | the meme ring around him, gold dust on the floor |
 | 12 | `#join` | Join the pride | walking straight toward the viewer at 0.85×; chin level, eyes on the camera; seen whole, from hip height | a runway of white and gold light rows (a few red sparks) scrolling at his stride, a red pool under his feet, the emblem far behind and dimmed |
 
 The hologram is the same on the lion and the placeholder: faint bands drifting upward, a thin red rim, legs fading into the floor glow, a flicker every few seconds; he scans in from the top on arrival and dissolves on the way out.
 
-Copy for all of them is in `src/screens.ts`; wrap a phrase in `{{double braces}}` to highlight it in red. The "posts" are generic cards on a made-up network called the Watering Hole.
+Copy for all of them is in `src/screens.ts`; wrap a phrase in `{{double braces}}` to highlight it in red. The cards on 04 and 07 are official Lion's Share announcements: no handles, no counts.
 
 ### 09, the Watering Hole
 
 He stands on a rock ledge above a dark pool of points (`src/gl/watering-hole.ts`, staged in `scenes.ts`). Every ~2.5s a question bubble rises from the water and drifts off high; every ~8s one curves to his phone and pops in a burst of sparks, he glances down, and the card on the right (`src/ask.ts`) shows the question, "Lion is typing…" for 1.2s, then his answer typing out, with the last three Q&As stacked behind it. Up to eight bubbles at once, four in lite mode.
 
 - **Visitors can ask.** The box under the copy takes up to 80 characters; ASK or Enter sends a bigger, brighter bubble that always reaches him. One question per 4s, and ASK waits while he's typing. While the box has focus, the wheel, swipes and arrow keys leave the screen alone; Esc gives them back.
-- **Answers** are in `src/content/lion-answers.ts`: about thirty general one-liners (random, no repeats until all are used) and a few topics matched by keyword (the suit, the mane, the roar, the hunt, naps, cubs, the feast). Anything about price, buying, the moon or the token gets a playful deflection ("I don't do predictions. I do patience."). He never gives financial advice, predicts prices or promises anything.
+- **Answers** are in `src/content/lion-answers.ts`: an airdrop FAQ matched by keyword (safety, claiming, connecting a wallet, exclusions, qualifying, snapshots, the cap, verifying, chain and contract, buying, what an airdrop is), then a few in-character topics (the suit, the mane, the roar, the hunt, naps, cubs) and about twenty general one-liners. Figures come from config. Anything about price, value or "will it go up" gets a playful deflection ("I don't do predictions. I do patience."). He never gives financial advice, predicts prices or promises anything. The keyword list for that deflection necessarily contains words the copy itself never uses ("moon", "profit", "invest"…).
 - **Filtering.** Questions are trimmed, empty ones are refused, and profanity or slurs (a short ROT13'd list) get "The lion ignores that one.", with the question withheld from the bubble and the card. Nothing is stored or sent anywhere.
 - **The reflection** is the scene drawn every other frame, at a third of the screen's size, from a camera mirrored under the water with a wider lens, then sampled with a wobble and squashed toward the foot of his rock (`SQUASH`). A true mirror would put his reflection below the bottom of the frame.
 - **Reduced motion:** no ambient bubbles; a visitor's question goes straight to the card.
@@ -171,7 +173,7 @@ The particle mixes (mostly white and red, a fair share of gold) are `sparkle`, `
 
 About 3.8s; click or Esc skips to the end. The buttons drop away, the star field spirals into the orb, it implodes, a shockwave and a warm white flash, hyperspace streaks, then the streaks settle into screen 01's throne room as the mascot scans in. Reduced motion gets a 0.6s fade instead. "Enter without sound" is the same picture, silent.
 
-## Going live: contract address, buy buttons, links
+## Going live: contract address, buy buttons, links, airdrops
 
 Everything is driven by `src/config.ts`:
 
@@ -181,9 +183,47 @@ buyUrl: null,            // e.g. 'https://…'
 explorerUrl: null,       // e.g. 'https://…/token/0xAbC…123'
 communityUrl: '#',       // "Join the pride" / "Bring a meme to the den"
 followUrl: '#',          // "Follow the roar" and the X button in the corner
+supply: 1_000_000_000,   // null = TBA
+chain: null,             // e.g. 'Solana'
+airdrop: {
+  allocationPercent: null, // e.g. 10 (% of supply)
+  rewardToken: '$ROAR',
+  cadence: null,           // e.g. 'monthly' (reads "Snapshots are taken monthly.")
+  nextSnapshot: null,      // e.g. '2026-11-01T16:00:00Z' (drives the screen 04 countdown)
+  minHolding: null,        // e.g. 100000 ($ROAR)
+  perWalletCap: null,      // e.g. 1 (% of each round)
+  reserveWallet: null,     // the address every drop is sent from
+  explorerUrl: null,       // explorer page for the reserve wallet
+  exclusions: [...],       // never counted: LP, exchanges, burn address, team wallets
+  history: [],             // { date, round, totalSent, wallets, txUrl } per round
+},
 ```
 
-While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 10, 11 (the meme link) and 12. The token stats on screen 12 are the `stats` list (Chain and Rewards say TBA for now).
+While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 07 (the reserve wallet), 10, 11 (the meme link) and 12. Any airdrop figure left `null` reads "TBA"; an empty `history` shows "The first drop is coming."
+
+**Units** (also in the comments in `src/config.ts`):
+
+| Field | Unit | Example | Shown as |
+|---|---|---|---|
+| `supply` | whole tokens | `1_000_000_000` | 1,000,000,000 |
+| `allocationPercent` | percent of total supply | `10` | 10% of supply |
+| `cadence` | a phrase completing "Snapshots are taken…" | `'monthly'` | Snapshots are taken monthly. |
+| `nextSnapshot` | ISO 8601 date-time, shown in UTC | `'2026-11-01T16:00:00Z'` | 1 NOV 2026 · 16:00 UTC, plus a live countdown |
+| `minHolding` | whole $ROAR tokens | `100000` | 100,000 $ROAR |
+| `perWalletCap` | percent of a single round | `1` | 1% of each round |
+| `history[].date` | ISO date | `'2026-11-01'` | 1 NOV 2026 |
+| `history[].totalSent` | whole `rewardToken` tokens | `5000000` | 5,000,000 $ROAR |
+| `history[].wallets` | count of wallets paid | `812` | 812 wallets |
+
+## Before each airdrop round
+
+The site promises three things, so every round has to keep them: each round's snapshot, eligible list and transactions are published; screen 05 shows the current rules; and screen 08 lists every round. Work through this in order:
+
+- [ ] **Announce the snapshot.** Set `airdrop.nextSnapshot` in `src/config.ts` (and `cadence`, `minHolding`, `perWalletCap`, `exclusions` if any of them changed, so screen 05 stays current). Deploy, then check the countdown on screen 04.
+- [ ] **Take the snapshot** at that moment: every holder's balance, with the excluded wallets (liquidity pool, exchanges, burn address, team wallets) removed.
+- [ ] **Publish the eligible list and amounts** (each wallet's balance and share, with the cap applied) before anything is sent.
+- [ ] **Send** the drop from the reserve wallet (`airdrop.reserveWallet`).
+- [ ] **Record the round.** Add `{ date, round, totalSent, wallets, txUrl }` to `airdrop.history` with the explorer link to the transactions. Set `nextSnapshot` to the next date, or back to `null` if none is set yet. Deploy, then check screens 04 and 08.
 
 ## Test on a phone
 
@@ -232,4 +272,6 @@ The share card needs an absolute image URL. The build picks up the site's addres
 
 ## Disclaimer
 
-A fictional community art project. Lion's Share, Leona Gold, Rex Mane, Marlo Kopje, the Great Hall, the Watering Hole and every lion quoted here are made up. Not affiliated with any company or person. Nothing here is financial advice.
+The site's disclaimer is `DISCLAIMER` in `src/config.ts`: $ROAR is a meme token with no intrinsic value and no expectation of financial return; airdrops are discretionary and may change or stop; crypto is volatile and you can lose what you put in; nothing here is financial advice; check your local laws; Lion's Share is an independent community project, not affiliated with or endorsed by any exchange, launchpad or company.
+
+Desktop shows it in full at the foot of screen 12. Phones show `SHORT_DISCLAIMER` ("Meme token. No expected returns. Not financial advice.") under the safety notice, with "Read more" opening the full text in a bottom sheet (`src/disclaimer-sheet.ts`). The meta descriptions in `index.html` carry a shortened version: when the disclaimer changes, update them too.

@@ -358,7 +358,8 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
       locked = false
       dropHash()
     },
-    jump: (i: number) => go(i),
+    /** Goes straight to screen `i`, the way a rail click does. */
+    jump: (i: number) => go(i, true, true),
     /** Suspends input while a lightbox is open. */
     setPaused(v: boolean) {
       paused = v

@@ -436,7 +436,7 @@ function throneRoom(): Stage {
   floorGlow(scene, V(0, 0, 0), 1.05, 1.15)
   motes(scene, 105, V(-8, 0, -9), V(8, 6, 3), 1400)
   return {
-    id: 'lion',
+    id: 'hold',
     transition: { claw: 'full', wind: [0, 0.4, 0] }, // his throne's rays: the points rise
     scene,
     // Close in: the crest near the top of the frame, the plinth near the bottom, the chest off his left hand.
@@ -608,7 +608,7 @@ function onStage(emblem: Stamp): Stage {
   }, { twinkle: 0.25, scatter: 6 })
   motes(scene, 305, V(-6, HALL, -5), V(6, 6, 2), 1200)
   return {
-    id: 'stage',
+    id: 'how',
     transition: { claw: 'full', wind: [0, 0.6, 0.2], swing: 12 }, // a roar from the hall
     scene,
     // At the crowd's eye level, so the front rows overlap his feet.
@@ -690,7 +690,7 @@ function theHunt(): Stage {
   floorGlow(scene, V(0, 0, 0), 0.8, 1.1)
   motes(scene, 403, V(-8, 0, -8), V(8, 5, 3), 1600, goldMix)
   return {
-    id: 'hunt',
+    id: 'snapshots',
     transition: { claw: 'light', wind: [0.6, 0, 0], swing: -10 }, // streaming out behind his stride
     scene,
     camera: { pos: V(-0.9, 1.2, 4.6), target: V(-0.9, 1.05, 0), fov: 38 },
@@ -764,7 +764,7 @@ function thePride(emblem: Stamp): Stage {
   floorGlow(scene, V(0, 0, 0), 0.95, 1)
   motes(scene, 522, V(-7, 0, -6), V(7, 5, 3), 1200)
   return {
-    id: 'pride',
+    id: 'rules',
     transition: { claw: 'full', wind: [0, 0.2, 0], swing: 10 },
     scene,
     // Close, from the thighs up, like a press shot.
@@ -847,7 +847,7 @@ function forYou(emblem: Stamp): Stage {
     giftSpin.rotation.y = reduced ? 0 : Math.sin(time * 0.55) * 0.6
   }
   return {
-    id: 'foryou',
+    id: 'holders',
     transition: { claw: 'light', wind: [0, 0, 0.6] }, // toward you
     scene,
     camera: { pos: CAM, target: V(CAM.x, 1.42, 0), fov: 40 },
@@ -904,7 +904,7 @@ function theSummit(emblem: Stamp): Stage {
   cloud(scene, 703, (c) => floorGrid(c, -7, 7, -9, 2, 7, 10, 18, 0.3), { scatter: 4, depthFade: [9, 13] })
   motes(scene, 704, V(-7, 0, -8), V(7, 8, 3), 1500, redMix)
   return {
-    id: 'summit',
+    id: 'proof',
     transition: { claw: 'full', wind: [0, 0.6, 0], swing: 18, wash: '#5a0a12' }, // up the red beam
     scene,
     camera: { pos: V(0.15, 2.1, 7.6), target: V(0.15, 2.4, 0), fov: 44 },
@@ -1041,7 +1041,7 @@ function cheers(): Stage {
   const GLASS_TURN = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), V(-1, 0, 0))
   const held = prop(scene, glass, (m, g) => onHand(m, 'Left', g, GLASS_AT, GLASS_TURN))
   return {
-    id: 'cheers',
+    id: 'drops',
     transition: { claw: 'light', wind: [0, 0.35, 0.1], swing: -6, wash: '#4a3410' }, // rising like the fizz
     scene,
     camera: { pos: V(-0.55, 1.62, 1.75), target: V(-0.55, 1.48, 0), fov: 42 },

@@ -1,6 +1,5 @@
+import { shorten } from './airdrop'
 import { config, PLACEHOLDER_ADDRESS } from './config'
-
-const shorten = (a: string) => (a.length > 13 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a)
 
 let toastTimer = 0
 function toast(message: string) {
@@ -20,42 +19,41 @@ const soonTag = () => {
 }
 
 /**
- * The contract address control, three ways:
+ * An address control: copy-to-clipboard once the address is set, greyed out until then.
  *   data-ca          corner pill: "CA 0x12…abcd COPY"
  *   data-ca="named"  "$ROAR CA COPY" (screen 10)
  *   data-ca="full"   the whole address with a COPY button (screen 12)
+ *   data-reserve     the airdrop reserve wallet: "RESERVE 0x12…abcd COPY" (screen 07)
  */
-function contractControl(host: HTMLElement) {
-  const address = config.contractAddress
-  const kind = host.dataset.ca || 'pill'
+function addressControl(host: HTMLElement, address: string | null, kind: string, pre: string, what: string) {
   const btn = document.createElement('button')
   btn.type = 'button'
   btn.className = `ca ca--${kind}`
-  const pre = document.createElement('span')
-  pre.className = 'ca__pre'
-  pre.textContent = kind === 'named' ? `${config.ticker} CA` : 'CA'
+  const preEl = document.createElement('span')
+  preEl.className = 'ca__pre'
+  preEl.textContent = pre
   const addr = document.createElement('span')
   addr.className = 'ca__addr'
   const copy = document.createElement('span')
   copy.className = 'ca__copy'
   copy.textContent = 'COPY'
   if (kind === 'full') btn.append(addr, copy)
-  else if (kind === 'named') btn.append(pre, copy)
-  else btn.append(pre, addr, copy)
+  else if (kind === 'named') btn.append(preEl, copy)
+  else btn.append(preEl, addr, copy)
 
   if (!address) {
     addr.textContent = PLACEHOLDER_ADDRESS
     btn.classList.add('is-disabled')
     btn.setAttribute('aria-disabled', 'true')
     btn.title = 'Coming soon'
-    btn.setAttribute('aria-label', 'Contract address, coming soon')
+    btn.setAttribute('aria-label', `${what}, coming soon`)
     host.append(btn)
     if (host.hasAttribute('data-tag')) host.append(soonTag())
     return
   }
 
   addr.textContent = kind === 'full' ? address : shorten(address)
-  btn.setAttribute('aria-label', `Copy contract address ${address}`)
+  btn.setAttribute('aria-label', `Copy ${what.toLowerCase()} ${address}`)
   btn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(address)
@@ -93,11 +91,21 @@ function linkControl(host: HTMLElement, label: string, url: string | null, varia
 }
 
 /**
- * Fills every [data-ca], [data-buy], [data-explorer] and [data-href] slot from
- * config. Anything without a value yet shows greyed out and does nothing.
+ * Fills every [data-ca], [data-reserve], [data-buy], [data-explorer] and
+ * [data-href] slot from config. Anything without a value yet shows greyed out
+ * and does nothing.
  */
 export function hydrateToken() {
-  document.querySelectorAll<HTMLElement>('[data-ca]').forEach(contractControl)
+  document.querySelectorAll<HTMLElement>('[data-ca]').forEach((el) => {
+    const kind = el.dataset.ca || 'pill'
+    addressControl(el, config.contractAddress, kind, kind === 'named' ? `${config.ticker} CA` : 'CA', 'Contract address')
+  })
+  document
+    .querySelectorAll<HTMLElement>('[data-reserve]')
+    .forEach((el) => addressControl(el, config.airdrop.reserveWallet, 'pill', 'RESERVE', 'Airdrop reserve wallet'))
+  document
+    .querySelectorAll<HTMLElement>('[data-reserve-explorer]')
+    .forEach((el) => linkControl(el, 'View on explorer ↗', config.airdrop.explorerUrl, 'ghost'))
   document
     .querySelectorAll<HTMLElement>('[data-buy]')
     .forEach((el) => linkControl(el, `Buy ${config.ticker} ↗`, config.buyUrl, el.dataset.buy || 'primary'))
@@ -119,20 +127,6 @@ export function hydrateToken() {
       a.title = 'Coming soon'
     }
   })
-
-  const stats = document.getElementById('stats')
-  if (stats) {
-    for (const s of config.stats) {
-      const cell = document.createElement('div')
-      cell.className = 'stat'
-      const dt = document.createElement('dt')
-      dt.textContent = s.label
-      const dd = document.createElement('dd')
-      dd.textContent = s.value
-      cell.append(dt, dd)
-      stats.append(cell)
-    }
-  }
 
   // Placeholder "#" links shouldn't yank the page back to the top.
   document.addEventListener('click', (e) => {

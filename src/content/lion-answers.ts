@@ -1,58 +1,135 @@
+import { A, cadenceText, fmtNumber, nextSnapshotText, shorten } from '../airdrop'
+import { config } from '../config'
+
 /**
- * The lion's office hours (screen 09): what he says back. All of it is
- * in-character fun. He never gives financial advice, predicts prices or
- * promises anything; questions about price, buying or the moon get a
- * playful deflection instead.
+ * The lion's office hours (screen 09): an airdrop FAQ in his voice. Every
+ * figure he quotes comes from config.ts; anything not set yet is "TBA". He
+ * never gives financial advice, predicts prices or promises anything:
+ * questions about price, value or "will it go up" get a playful deflection.
  *
  * Nothing a visitor types is stored or sent anywhere: questions are matched
  * here, in the page, and forgotten.
  */
 
+const T = config.ticker
+const minimum = A.minHolding === null ? 'the minimum (TBA)' : `at least ${fmtNumber(A.minHolding)} ${T}`
+const cap = A.perWalletCap === null ? 'A per-wallet cap (TBA) keeps' : `No wallet takes more than ${A.perWalletCap}% of a round, which keeps`
+const excluded = A.exclusions.length ? A.exclusions.join(', ').toLowerCase() : 'nothing yet'
+const exchangesOut = A.exclusions.some((e) => /exchange/i.test(e))
+const schedule = A.cadence ? `Snapshots are taken ${cadenceText()}.` : 'The snapshot schedule is TBA.'
+const next = A.nextSnapshot ? `Next one: ${nextSnapshotText()}.` : 'Next snapshot: TBA. The countdown on this site wakes up when it’s set.'
+
 /** The general pool: picked at random, no repeats until every one has been used. */
 const GENERAL = [
+  'Ask me about snapshots, rules or claiming. Everything else gets a proverb.',
+  'Hold, get counted, receive. That’s the whole hunt.',
   'A lion never asks for the biggest slice. He just sits where it lands.',
   'Patience is just hunting with better posture.',
   'I’ve never been late. Everyone else has been early.',
   'Kings don’t queue. We do, however, wait beautifully.',
-  'The pride isn’t a club. Clubs have exits.',
   'I don’t roar to be heard. I roar so the echo has something to do.',
   'Every lion starts as a cub with an oversized opinion. Some of us grew into it.',
   'Rule one of the hunt: be the calmest thing in the long grass.',
   'Hyenas laugh at everything. That’s how you know they never get the joke.',
   'I nap eighteen hours a day. The other six are legendary.',
   'Strength isn’t loud. It just never has to repeat itself.',
-  'A good pride eats together. A great one remembers who brought the napkins.',
   'I don’t chase. I arrive.',
-  'The watering hole is where gossip comes to drink. I bring snacks.',
   'Ask me again at dusk. I get philosophical when the light turns gold.',
-  'Want to be king of the jungle? First ask why lions live on the savanna.',
   'Zebras ask for directions. Lions give them.',
   'Being majestic is ten percent mane and ninety percent not tripping in public.',
-  'Some days you’re the lion. Some days you’re the lion who forgot why he walked into the clearing.',
-  'I keep my claws sharp and my replies sharper.',
-  'Loyalty isn’t asked for. It’s who’s still at the watering hole when the sun goes down.',
-  'The best seat at the watering hole is the one nobody dares to take. I’m sitting in it.',
-  'Yes, I read every question. No, I don’t read the ones from hyenas.',
+  'I keep my claws sharp and my comebacks sharper.',
   'The trick to a good roar is the silence just before it.',
-  'Cubs ask “why?”. Elders ask “why not after a nap?”',
-  'A pride is only as strong as its quietest member on a bad day. Check on your quiet ones.',
-  'I’ve been called intimidating. I’ve also been told I give excellent hugs. Both are true.',
-  'Fortune favours the bold. The bold favour a long lunch first.',
-  'Never trust a gazelle who says “trust me”.',
+  'Never trust a gazelle who says “trust me”. Or a stranger who DMs you about an airdrop.',
   'Pull up a rock. There’s room. There’s always room.',
 ]
 
 /** Topics a question can be about, checked in order; the first match answers. */
 const TOPICS: { match: RegExp; answers: string[] }[] = [
   {
-    // Money talk gets a deflection, every time. Checked first so "buy a suit" is still a deflection.
-    match: /\b(price|prices|pump\w*|moon\w*|buy\w*|sell\w*|invest\w*|worth|lambo|\d+x|charts?|wen|mcap|market ?cap|ath|dip|profits?|returns?|rich|money|cash|financ\w*|token\w*|coins?|\$roar|hodl\w*|holders?|gains?|presale|airdrop\w*|crypto\w*|bitcoin|btc|eth|solana|stocks?|trad(e|es|ing|er|ers)|portfolio|exchange|listing|launch\w*)\b/,
+    // Safety first: seed phrases, DMs and anyone offering "help".
+    match: /\b(seed|phrase|private ?key|keys|dms?|messaged?|scam\w*|support|admin\w*|mods?|impost\w*|fake|phish\w*|recover\w*)\b/,
+    answers: [
+      'We’ll never DM you, never ask for your seed phrase and never ask you to connect a wallet. Anyone who does is a hyena in a borrowed mane.',
+      'Your seed phrase stays with you. Always. Airdrops are sent automatically; nobody needs it, least of all me.',
+      'Only trust links on this site. The rest of the savanna is full of very convincing hyenas.',
+    ],
+  },
+  {
+    match: /\b(claim\w*|redeem\w*|collect\w*|apply|register\w*|sign ?up|whitelist\w*)\b/,
+    answers: [
+      'Nothing to claim, nothing to sign. Your share is sent straight to your wallet.',
+      'No forms, no claiming. If someone asks you to “claim” a drop, walk away. It arrives on its own.',
+    ],
+  },
+  {
+    match: /\b(connect\w*|sign\w*|approv\w*|permission\w*|metamask|phantom|link (my|your) wallet)\b/,
+    answers: [
+      'Never. You don’t connect a wallet to receive a drop. Anyone who asks is a hyena.',
+      'No connecting, no signing. Drops are sent automatically to holders’ wallets.',
+    ],
+  },
+  {
+    // Money talk gets a deflection, every time. Checked before the airdrop topics so "will the airdrop pump" is still a deflection.
+    match: /\b(prices?|pump\w*|moon\w*|go(es|ing)? up|worth|value|lambo|\d+x|charts?|wen|mcap|market ?cap|ath|dip|profits?|returns?|rich|gains?|invest\w*|predict\w*|sell\w*|dump\w*|financ\w*|money|cash)\b/,
     answers: [
       'I don’t do predictions. I do patience.',
+      'Will it go up? Ask a giraffe. They see further than I do.',
       'Charts are for hyenas. Lions watch the horizon and keep quiet.',
-      'Ask the stars about the future. Ask me about naps.',
+      'Ask the stars about prices. Ask me about snapshots.',
       'Nothing said on this ledge is advice. Especially the bits that sound like it.',
-      'A lion never counts the herd out loud. Bad manners, worse luck.',
+    ],
+  },
+  {
+    match: /\b(exclu\w*|exchanges?|cex\w*|lp|liquidity|pools?|burn\w*|team|devs?|binance|coinbase|kraken|okx|bybit)\b/,
+    answers: [`Never counted: ${excluded}. Hold in a wallet you control.`],
+  },
+  {
+    match: /\b(qualif\w*|eligib\w*|minimum|min|requir\w*|need to hold|how much do i need|how do i get|enough)\b/,
+    answers: [
+      `Hold ${minimum} in a wallet you control when the snapshot is taken. That’s the whole test.`,
+      `Be holding at the snapshot, in your own wallet.${exchangesOut ? ' Exchange balances don’t count.' : ''}`,
+    ],
+  },
+  {
+    match: /\b(snapshots?|when|schedule\w*|next|how often|cadence|date|countdown|monthly|weekly)\b/,
+    answers: [`${schedule} ${next}`, `A snapshot is a moment-in-time record of every holder. ${schedule}`],
+  },
+  {
+    match: /\b(how much|caps?|capped|whales?|proportion\w*|small|tiny|shrimp|fair\w*|split\w*|big holders?)\b/,
+    answers: [
+      `Your share is proportional to what you hold. Small holders included. ${cap} the whales from taking it all.`,
+      `Hold more, receive more; hold less, still receive your part. ${cap} it fair.`,
+    ],
+  },
+  {
+    match: /\b(verif\w*|proof|prove|check\w*|trust\w*|transparen\w*|explorer|tx|txs|transactions?|reserve|on ?chain|audit\w*|list)\b/,
+    answers: [
+      'Every round’s snapshot, holder list and transactions are published. Check them on the explorer yourself.',
+      A.reserveWallet
+        ? `Every drop leaves the reserve wallet, ${shorten(A.reserveWallet)}. Watch it on the explorer.`
+        : 'Every drop leaves one public reserve wallet. Its address is TBA; it goes up on this site’s Nothing Hidden screen.',
+    ],
+  },
+  {
+    match: /\b(chain|network|contract|address|ca)\b/,
+    answers: [
+      `${T} lives on ${config.chain ?? 'a chain that’s still TBA'}. ${config.contractAddress ? 'Copy the contract from this site, nowhere else.' : 'The contract address goes up here when it’s live. Anything before that is an impostor.'}`,
+    ],
+  },
+  {
+    match: /\b(buy\w*|purchase\w*|get some|launch\w*|listing|listed|presale|live)\b/,
+    answers: [
+      config.buyUrl ? 'The Buy button on this site is the only link I’d trust.' : 'Nothing to buy yet. The Buy button wakes up when it’s live. Only trust links on this site.',
+      'Use the links on this site and nothing else. Nothing said here is advice.',
+    ],
+  },
+  {
+    // "$roar" arrives here as "sroar": normalise() reads $ as s.
+    match: /\b(airdrop\w*|drops?|rewards?|sroar|tokens?|coins?|holders?|holding|hold)\b/,
+    answers: [
+      `An airdrop is ${A.rewardToken} sent straight to holders’ wallets. Be holding at the snapshot and a share comes to you.`,
+      'The pride’s reward for staying: a share sent to every eligible holder after a snapshot. Discretionary, like all good gifts, and it may change or end.',
+      `${T} is the meme token of the pride. Hold it, get counted at the snapshot, receive your share.`,
     ],
   },
   {
@@ -83,36 +160,18 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
     match: /\b(hunt\w*|prey|chase\w*|stalk\w*|gazelles?|zebras?|wildebeest|catch\w*)\b/,
     answers: [
       'The hunt is ninety percent waiting, nine percent stretching, one percent glory.',
-      'Out past the long grass, where the patient ones are already sitting.',
       'We hunt together, eat together and argue about the leftovers together.',
     ],
   },
   {
-    match: /\b(leona|elder\w*|rex|marlo|ada|sam)\b/,
-    answers: [
-      'Leona taught me everything. Mostly how to look like I knew it already.',
-      'The elders have seen a few seasons. I listen when they speak, and nod when they nap.',
-    ],
-  },
-  {
     match: /\b(sleep\w*|naps?|napping|tired|rest\w*|bed)\b/,
-    answers: [
-      'Eighteen hours a day, on the warmest rock. Rest is a strategy.',
-      'I don’t sleep. I recharge my majesty.',
-    ],
+    answers: ['Eighteen hours a day, on the warmest rock. Rest is a strategy.', 'I don’t sleep. I recharge my majesty.'],
   },
   {
     match: /\b(cubs?|join\w*|pride|members?|community|friends?|family)\b/,
     answers: [
       'Cubs are always welcome. Bring an appetite and an indoor voice.',
-      'Anyone who turns up for dinner is pride. That’s the whole membership form.',
-    ],
-  },
-  {
-    match: /\b(feast\w*|food|eat\w*|dinner|lunch|snack\w*|hungry|bill)\b/,
-    answers: [
-      'The feast is at dusk. The lion eats first. Manners, not greed.',
-      'Nobody splits the bill at a pride dinner. That’s rather the point of a pride.',
+      'Anyone who turns up is pride. The links on this site are the way in.',
     ],
   },
 ]
@@ -200,31 +259,27 @@ export function answerFor(question: string) {
   return general()
 }
 
-/** What rises from the water on its own: the pride's usual questions, short enough for a bubble. */
+/** What rises from the water on its own: the questions holders ask most, short enough for a bubble. */
 export const AMBIENT_QUESTIONS = [
+  'WHAT’S AN AIRDROP?',
+  'HOW DO I QUALIFY?',
+  'WHEN’S THE SNAPSHOT?',
+  'DO I NEED TO CLAIM?',
+  'CONNECT MY WALLET?',
+  'WHAT’S EXCLUDED?',
+  'WHERE CAN I VERIFY?',
+  'IS THERE A MINIMUM?',
+  'DO SMALL HOLDERS GET ANY?',
+  'WHAT ABOUT WHALES?',
+  'DO EXCHANGES COUNT?',
+  'WHO SENDS THE DROPS?',
+  'WHAT CHAIN?',
+  'WILL IT GO UP?',
   'WHY THE SUIT?',
   'IS THE MANE REAL?',
-  'WHERE’S THE HUNT?',
-  'WHO’S LEONA?',
-  'FAVOURITE NAP SPOT?',
-  'HOW LOUD IS THE ROAR?',
-  'CAN CUBS JOIN?',
-  'RED TIE OR CRIMSON?',
-  'WHO PAYS FOR THE FEAST?',
-  'BEST HUNTING TIP?',
-  'DO YOU EVER SLEEP?',
-  'WHY A LION?',
-  'WEN ROAR?',
-  'ANY ADVICE FOR CUBS?',
-  'WHAT’S IN THE PHONE?',
-  'COMB OR CLAWS?',
 ]
 
-/** Made-up handles for the questions the pride sends in. */
-export const ASKERS = ['@dusty.paw', '@tallgrass', '@kopje.kid', '@little.roar', '@dawn.patrol', '@sam.tuft', '@acacia.ana', '@ember.cub', '@long.grass', '@golden.hour']
-
 const ambient = bag(AMBIENT_QUESTIONS)
-const asker = bag(ASKERS)
-/** The next question to rise on its own, and who asked it. */
+/** The next question to rise on its own, and the label it's shown under (no invented askers). */
 export const ambientQuestion = () => ambient()
-export const ambientAsker = () => asker()
+export const ambientAsker = () => 'OFTEN ASKED'

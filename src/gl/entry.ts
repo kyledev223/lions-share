@@ -422,7 +422,6 @@ export async function createEntry(reduced: boolean) {
     { r: 1.2, w: RING_W, dashes: 0, tilt: [0.55, 0.6, 0.3], turn: 1.1 },
     { r: 1.42, w: RING_W, dashes: 0, tilt: [-0.75, 0.55, 0], turn: -0.8 },
     { r: 1.68, w: RING_W, dashes: 0, tilt: [0.4, -0.85, 0.9], turn: 0.6 },
-    { r: 1.98, w: RING_W, dashes: 0, tilt: [-0.2, -0.3, -0.7], turn: -0.45 },
   ] as const
   const rings = RING_SPECS.map((spec, ri) => {
     const c = new Cloud(130 + ri)

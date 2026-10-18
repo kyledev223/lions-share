@@ -26,11 +26,11 @@ const ALT: Record<string, string> = {
 }
 
 const PLACEHOLDERS: PlaceholderSpec[] = [
-  { top: ['POV: YOU GOT', 'THE BIG SLICE'], bottom: 'AND YOU EARNED IT', motif: 'coin', scheme: 0 },
-  { top: ['ME WATCHING', 'THE CHART'], bottom: 'LOW IN THE LONG GRASS', motif: 'horizon', scheme: 1 },
+  { top: ['POV: YOU HELD', 'AT THE SNAPSHOT'], bottom: 'THE SHARE FOUND YOU', motif: 'coin', scheme: 0 },
+  { top: ['ME WATCHING', 'THE COUNTDOWN'], bottom: 'LOW IN THE LONG GRASS', motif: 'horizon', scheme: 1 },
   { top: ['SHARE? I TAKE', 'THE BIG ONE'], bottom: 'IT IS LITERALLY THE NAME', motif: 'head', scheme: 2 },
   { top: ['HYENAS LAUGH.', 'LIONS EAT.'], bottom: 'PICK YOUR SIDE OF THE FIRE', motif: 'stack', scheme: 3 },
-  { top: ['SEES DIP.', 'POUNCES.'], bottom: 'APEX BEHAVIOUR', motif: 'eye', scheme: 0 },
+  { top: ['NO CLAIM.', 'NO SIGNING.'], bottom: 'IT JUST LANDS', motif: 'eye', scheme: 0 },
   { top: ["HE'S NOT LAZY."], bottom: "HE'S CONSERVING ENERGY", motif: 'head', scheme: 1 },
   { top: ['DEN STATUS:', 'FULLY STOCKED'], bottom: 'THE PRIDE EATS TONIGHT', motif: 'stack', scheme: 2 },
   { top: ['ROAR IS A', 'LOVE LANGUAGE'], bottom: 'TELL YOUR CUBS', motif: 'eye', scheme: 3 },
