@@ -955,7 +955,7 @@ function cheers(): Stage {
 function phone(seed: number) {
   const g = new THREE.Group()
   cloud(g, seed, (c) => {
-    roundedRect(c, V(0, 0, 0), 0.08, 0.155, 0.012, { density: 3000, jitter: 0.0012, size: [0.003, 0.005], tint: (r) => (r < 0.55 ? C.light : C.white), glow: 2.2 })
+    roundedRect(c, V(0, 0, 0), 0.08, 0.155, 0.012, { density: 2400, jitter: 0.0012, size: [0.003, 0.005], tint: (r) => (r < 0.7 ? C.light : C.white), glow: 1.5 })
     volume(c, V(-0.035, -0.07, 0.002), V(0.035, 0.07, 0.004), 1400, { size: [0.002, 0.004], tint: (r) => (r < 0.7 ? C.red : C.light), glow: 2.8 })
   }, { twinkle: 0.4, scatter: 1 })
   return g
@@ -1071,6 +1071,46 @@ function ledge(scene: THREE.Scene, foot: number) {
   return body
 }
 
+/**
+ * How he holds the phone on 09. The typing clip cups his paws together, the left palm facing the right
+ * with its fingers curled and the right fingers tapping into it, so a phone lying flat on the palm sits
+ * inside both paws and edge-on to the viewer. Instead it stands up in the cupped paws: placed from the
+ * left hand (out from the palm `palm`, along the fingers `along`, then up `up`, in metres at his 1.9m
+ * scale), and turned so its screen faces between his eyes and the viewer (`toFace`: 0 = straight at
+ * the viewer, 1 = straight at his eyes), upright.
+ */
+const PHONE = { scale: 1.15, palm: 0.06, along: 0.07, up: 0.075, toFace: 0.45 }
+const phoneHand = {
+  q: new THREE.Quaternion(),
+  p: new THREE.Vector3(),
+  s: new THREE.Vector3(),
+  head: new THREE.Vector3(),
+  face: new THREE.Vector3(),
+  side: new THREE.Vector3(),
+  up: new THREE.Vector3(),
+  basis: new THREE.Matrix4(),
+}
+function holdPhone(m: Mascot, phoneObj: THREE.Object3D) {
+  const bone = m.bone('LeftHand')
+  if (!bone || m.placeholder) return onHand(m, 'Left', phoneObj, V(0, 0.06, 0.025))
+  const h = phoneHand
+  const k = m.root.scale.x
+  bone.updateWorldMatrix(true, false)
+  bone.matrixWorld.decompose(h.p, h.q, h.s)
+  // Mixamo hand bones: fingers along +Y, palm facing +Z.
+  phoneObj.position
+    .copy(h.p)
+    .addScaledVector(h.face.set(0, 0, 1).applyQuaternion(h.q), PHONE.palm * k)
+    .addScaledVector(h.face.set(0, 1, 0).applyQuaternion(h.q), PHONE.along * k)
+  phoneObj.position.y += PHONE.up * k
+  // The screen faces a blend of his eyes and the viewer (his forward); the phone stands upright.
+  m.boneWorld('Head', h.head).sub(phoneObj.position).normalize()
+  h.face.set(Math.sin(m.root.rotation.y), 0, Math.cos(m.root.rotation.y)).lerp(h.head, PHONE.toFace).normalize()
+  h.up.set(0, 1, 0).addScaledVector(h.face, -h.face.y).normalize()
+  h.side.crossVectors(h.up, h.face)
+  phoneObj.quaternion.setFromRotationMatrix(h.basis.makeBasis(h.side, h.up, h.face))
+}
+
 function askTheLion(link: AskLink): Stage {
   const scene = baseScene()
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -1083,10 +1123,8 @@ function askTheLion(link: AskLink): Stage {
 
   // His phone, glowing red: a light that catches his paw and muzzle, and a soft halo that flares when a bubble pops.
   const device = phone(922)
-  device.scale.setScalar(1.3)
-  // Lying in his left palm, long side along his fingers, screen facing out of the palm.
-  const PHONE_AT = V(0, 0.06, 0.025)
-  const held = prop(scene, device, (m, d) => onHand(m, 'Left', d, PHONE_AT))
+  device.scale.setScalar(PHONE.scale)
+  const held = prop(scene, device, holdPhone)
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softGlow(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color('#ff2a3a'), opacity: 0 }))
   const shine = new THREE.PointLight('#ff2638', 0, 1.1, 2)
   // In the scene from the start, so the warm-up compiles his shader with this light.
