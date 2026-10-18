@@ -475,7 +475,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     const follow = 1 - Math.exp(-dt / fx.parallax.lag)
     lean.x += (tx - lean.x) * follow
     lean.y += (ty - lean.y) * follow
-    const lensOn = opts.finePointer && !opts.reduced && pointer.inside && state.mode === 'site' && !lite.on
+    // The lens rests while a screen change is under way.
+    const lensOn = opts.finePointer && !opts.reduced && pointer.inside && state.mode === 'site' && !lite.on && !trans
     lean.lens += ((lensOn ? 1 : 0) - lean.lens) * (1 - Math.exp(-dt / 0.15))
 
     // Warm-up: draw one not-yet-seen stage per frame (see warm()).

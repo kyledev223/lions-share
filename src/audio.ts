@@ -520,6 +520,67 @@ class Music {
   }
 
   /**
+   * Screen changes: air moving. 'out' is a soft swell of band-passed noise sweeping up as the
+   * old screen lifts away (~0.45s); 'in' sweeps back down as the new one settles (~0.8s).
+   * Through the master, so it sits under the music. Silent unless the music is on.
+   */
+  whoosh(dir: 'out' | 'in') {
+    const ctx = this.ctx
+    if (this.muted || !ctx || ctx.state !== 'running') return
+    const t = ctx.currentTime + 0.01
+    const [f0, f1, len, attack, level] = dir === 'out' ? [320, 2600, 0.45, 0.3, 0.09] : [2400, 420, 0.8, 0.05, 0.07]
+    const band = ctx.createBiquadFilter()
+    band.type = 'bandpass'
+    band.Q.value = 1.1
+    band.frequency.setValueAtTime(f0, t)
+    band.frequency.exponentialRampToValueAtTime(f1, t + len)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(level, t + len * attack)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len)
+    const noise = ctx.createBufferSource()
+    noise.buffer = this.noise
+    noise.loop = true
+    noise.connect(band).connect(g).connect(this.master)
+    noise.start(t, Math.random() * 0.5)
+    noise.stop(t + len + 0.05)
+    window.setTimeout(() => g.disconnect(), (len + 0.3) * 1000)
+  }
+
+  /** Screen changes: the low thump as the claw lands (a falling sine and a muffled knock). Silent unless the music is on. */
+  thump() {
+    const ctx = this.ctx
+    if (this.muted || !ctx || ctx.state !== 'running') return
+    const t = ctx.currentTime + 0.005
+    const out = ctx.createGain()
+    out.gain.value = 0.5
+    out.connect(this.master)
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(72, t)
+    o.frequency.exponentialRampToValueAtTime(36, t + 0.22)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(1, t + 0.008)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32)
+    o.connect(g).connect(out)
+    o.start(t)
+    o.stop(t + 0.35)
+    const knock = ctx.createBufferSource()
+    knock.buffer = this.noise
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = 380
+    const kg = ctx.createGain()
+    kg.gain.setValueAtTime(0.5, t)
+    kg.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
+    knock.connect(lp).connect(kg).connect(out)
+    knock.start(t, Math.random() * 0.5)
+    knock.stop(t + 0.08)
+    window.setTimeout(() => out.disconnect(), 700)
+  }
+
+  /**
    * Enter sequence: a low riser, filtered noise plus two detuned saws
    * sweeping up over `seconds`. Straight to the speakers (the music fades
    * in underneath). Silent unless the music is on.

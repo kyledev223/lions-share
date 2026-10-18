@@ -1,5 +1,7 @@
 import gsap from 'gsap'
+import { music } from './audio'
 import type { Engine } from './gl/engine'
+import { scramble } from './scramble'
 import type { ScreenView } from './screens'
 
 /** Wheel distance (px) that counts as one deliberate flick. */
@@ -40,29 +42,70 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   const hudSub = document.getElementById('hudSub')!
   const root = document.documentElement
 
-  rail.innerHTML = views
-    .map(
-      (v, i) =>
-        `<a class="rail__tick" href="#${v.def.id}" data-i="${i}"><span class="rail__name">${v.def.name}</span><span class="rail__num">${String(i + 1).padStart(2, '0')}</span><i aria-hidden="true"></i></a>`,
-    )
-    .join('')
+  rail.innerHTML =
+    views
+      .map(
+        (v, i) =>
+          `<a class="rail__tick" href="#${v.def.id}" data-i="${i}"><span class="rail__name">${v.def.name}</span><span class="rail__num">${String(i + 1).padStart(2, '0')}</span><i aria-hidden="true"></i></a>`,
+      )
+      .join('') + '<i class="rail__bead" aria-hidden="true"></i>'
   const ticks = [...rail.querySelectorAll<HTMLAnchorElement>('.rail__tick')]
+  const bead = rail.querySelector<HTMLElement>('.rail__bead')!
 
   let index = 0
   let locked = true
   const indexOfHash = () => views.findIndex((v) => v.def.id === location.hash.slice(1))
 
-  /** Updates everything that says "which screen is this": rail, corner label, URL. */
-  function reflect(push: boolean) {
+  /**
+   * A gold bead runs down the rail from the old tick to the new one, arriving as the stage changes
+   * (0.12–0.52s), and flashes out as the new tick's line grows. Ticks it passes on a jump blink.
+   */
+  const tickY = (i: number) => ticks[i].offsetTop + ticks[i].offsetHeight / 2
+  function runBead(from: number, to: number) {
+    gsap.killTweensOf(bead)
+    // Measured once per run: reading layout every frame while the copy animates would force a reflow each time.
+    const ys = ticks.map((_t, i) => tickY(i))
+    let near = from
+    gsap
+      .timeline()
+      .set(bead, { y: ys[from], autoAlpha: 0, scale: 0.4 })
+      .to(bead, { autoAlpha: 1, scale: 1, duration: 0.12, ease: 'power2.out' })
+      .to(bead, {
+        y: ys[to],
+        duration: 0.4,
+        ease: 'expo.inOut',
+        onUpdate() {
+          const y = gsap.getProperty(bead, 'y') as number
+          const i = ys.reduce((best, v, k) => (Math.abs(v - y) < Math.abs(ys[best] - y) ? k : best), near)
+          if (i === near) return
+          near = i
+          if (i === to) return
+          ticks[i].classList.remove('is-passed')
+          void ticks[i].offsetWidth
+          ticks[i].classList.add('is-passed')
+        },
+      })
+      .to(bead, { scale: 2.2, autoAlpha: 0, duration: 0.35, ease: 'power2.out' })
+  }
+
+  /** Updates everything that says "which screen is this": rail, corner label, URL. `animate`: the label scrambles over. */
+  function reflect(push: boolean, animate = false) {
     ticks.forEach((t, i) => {
       t.classList.toggle('is-active', i === index)
       if (i === index) t.setAttribute('aria-current', 'true')
       else t.removeAttribute('aria-current')
     })
     const def = views[index].def
-    hudNum.textContent = String(index + 1).padStart(2, '0')
-    hudName.textContent = def.name.toUpperCase()
-    hudSub.textContent = def.sub.toUpperCase()
+    const num = String(index + 1).padStart(2, '0')
+    if (animate) {
+      scramble(hudNum, num, 400)
+      scramble(hudName, def.name.toUpperCase(), 600)
+      scramble(hudSub, def.sub.toUpperCase(), 800)
+    } else {
+      hudNum.textContent = num
+      hudName.textContent = def.name.toUpperCase()
+      hudSub.textContent = def.sub.toUpperCase()
+    }
     root.dataset.screen = def.id
     root.classList.toggle('is-last', index === count - 1)
     const hash = '#' + def.id
@@ -131,16 +174,22 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
     busy = true
     const from = views[index]
     const next = views[to]
-    from.intro?.pause()
-    gsap.to(from.el, { autoAlpha: 0, y: to > index ? -24 : 24, duration: 0.32, ease: 'power2.in' })
+    const dir = to > index ? 1 : -1
+    from.leave(dir)
+    runBead(index, to)
+    music.whoosh('out')
     void engine
       .go(to, () => {
         from.el.classList.remove('is-active')
+        gsap.set(from.el, { autoAlpha: 0 })
         index = to
         next.el.classList.add('is-active')
         gsap.set(next.el, { autoAlpha: 1, y: 0 })
         next.intro?.restart()
-        reflect(pushHistory)
+        reflect(pushHistory, true)
+        // The claw lands: a low thump, then the air settles.
+        music.thump()
+        music.whoosh('in')
       })
       .then(() => {
         busy = false
