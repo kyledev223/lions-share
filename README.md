@@ -6,8 +6,6 @@ A twelve-screen, full-viewport site for a **fictional** community art project. N
 
 Every environment is built from glowing points: outlines of rooms, floors, props, charts, text and the emblem, mostly white and red with gold accents, under soft bloom, fine film grain and a little colour fringing toward the edges. The mascot is a lion in a suit, shown as a hologram, with a different animation on each screen. The site opens on a star field around a glass orb of points with the lion's head inside. Built with Vite, vanilla TypeScript, Three.js and GSAP. The music is generated in the browser and the fonts are bundled.
 
-**The lion model isn't in yet.** Until `public/assets/lion/lion.glb` exists, every screen shows a dark hologram silhouette of a suited figure, labelled "lion.glb pending" (see [The mascot](#the-mascot-npm-run-mascot)).
-
 ## Run it
 
 ```bash
@@ -32,11 +30,11 @@ Needs Node 22.18 or newer. `npm run mascot` also needs Blender 4.2 or newer.
 |---|---|
 | the generated model (`.fbx`) | kept for reference; the rigged copy inside the Mixamo files is what's used |
 | `lion-apose.png` | the front image the model was generated from; it becomes his texture |
-| `idle.fbx`, `sitting-idle.fbx`, `clapping.fbx`, `walking.fbx`, `reaching.fbx`, `looking-up.fbx`, `toast.fbx`, `typing.fbx`, `looking-at-hand.fbx`, `waving.fbx` | Mixamo exports on the same rig, one clip each |
+| `idle.fbx`, `sitting-idle.fbx`, `presenting.fbx`, `walking.fbx`, `reaching.fbx`, `looking-up.fbx`, `toast.fbx`, `typing.fbx`, `looking-at-hand.fbx`, `greeting.fbx` | Mixamo exports on the same rig, one clip each |
 
 Drop the files in and run `npm run mascot`. It writes `public/assets/lion/lion.glb` and previews in `assets-raw/lion/preview/`. Step by step:
 
-1. **Renames** Mixamo's names to the slugs above ("Breathing Idle.fbx" → `idle.fbx`, "Drinking.fbx" → `toast.fbx`, and so on; the table is `RENAMES` in `scripts/mascot.mjs`).
+1. **Renames** Mixamo's names to the slugs above ("Breathing Idle.fbx" → `idle.fbx`, "Talking.fbx" → `presenting.fbx`, "Drinking.fbx" → `toast.fbx`, "Standing Greeting.fbx" → `greeting.fbx`, and so on; the table is `RENAMES` in `scripts/mascot.mjs`).
 2. **Blender** (`scripts/mascot/build.py`, run headless):
    - takes the skinned mesh and rig from one clip file, scales him to 1.9 m, triangulates and drops the FBX's split normals;
    - **unwraps it with xatlas** (`scripts/mascot/unwrap.py`, run in Blender's own Python outside Blender). The atlas is cached in `preview/uv-*.npz`, so later runs are much faster. xatlas is pip-installed into `.venv-assets/blender-py/` on first use;
@@ -50,7 +48,15 @@ Drop the files in and run `npm run mascot`. It writes `public/assets/lion/lion.g
 
 Blender is found via `$BLENDER`, then `PATH`, then the usual install folders (and `~/tools/blender-*`). The portable zip from <https://www.blender.org/download/> works. `MASCOT_TEX=4096` bakes bigger textures; `MASCOT_STOP=fit` or `MASCOT_STOP=texture` stops early to check the projection or the bake.
 
-**On the site** each clip is cleaned on load: the hips lose any travel (so every clip stays on his spot) and the last half second of every track blends into its first frame, so loops never pop. Clips crossfade on screen changes.
+**On the site** each clip is cleaned on load: the hips lose any travel (so every clip stays on his spot) and the last 0.7s of every track eases into its first frame, so loops never pop. `reaching` ends with his arm out, so it plays forward and back instead (reach, then draw the hand in). `toast` has its sip cut out (`CUTS` in `src/gl/mascot.ts`), so on screen 08 he just stands holding his glass. Gestures (presenting, reaching, toast, greeting) play at 0.8×, idles at 0.9×, and clips crossfade over 0.6s on screen changes; all of it is `fx.mascot` in `src/fx-config.ts`. On screen 07 his gaze is lifted a little on top of the looking-around clip (`fx.mascot.lookUp`). The floor on screen 04 scrolls at the walk clip's measured stride (0.99 m/s at 1×) times its speed, so his feet don't slide.
+
+**On the throne (01)** a pose layer (`src/gl/throne-pose.ts`) runs over the sitting-idle clip after the mixer: his hips settle into the seat, knees and feet draw in with the feet kept flat, shoulders ease back, and a two-bone IK lays each forearm along its armrest (elbow on the back third, hand palm-down at the front, fingers over the edge). Every 6–10s one hand taps its fingers or eases along the rail. The throne is drawn from the same `THRONE` measurements, so the rails stay under his arms. The layer fades in and out with the 0.6s crossfade (`mascot.setOverlay`), so the arms release smoothly into the next screen's clip.
+
+**At the podium (05)** the same kind of layer (`src/gl/podium.ts`) rests his hands on the podium top over the idle clip, elbows bent down and back, with the same occasional finger tap. Both layers share `src/gl/ik.ts` (two-bone IK, blending with the clip, and prop frames that travel with him on the way out).
+
+**Props** ride on his hand bones (`onHand` in `src/gl/scenes.ts`): the coupe's stem across his left fist (08), the phone flat in his left palm (09), the coin just above his left palm (10). Mixamo hand bones point down the fingers along +Y with the palm facing +Z, so offsets are given in those axes. The mic stand on 03 stands on the floor beside him.
+
+**Current build:** 735k triangles at full detail, a 2048 colour texture and a 2048 AO/roughness texture (WebP), ten clips, meshopt-compressed: 6.6 MB.
 
 ## Where things live
 
@@ -67,7 +73,10 @@ src/
     engine.ts           renderer, composer (scene → bloom → final), cameras, transitions, lite mode
     points.ts           the point-cloud material and builder every environment uses
     shapes.ts           lines, rings, panels, boxes, discs, and text/SVG sampled into points
-    mascot.ts           loads lion.glb (PBR + hologram) or builds the placeholder figure; lights, clips, flicker
+    mascot.ts           loads lion.glb (PBR + hologram) or builds the placeholder figure; lights, clips, flicker, pose layers
+    throne-pose.ts      the throne's measurements and the IK that seats him in it (screen 01)
+    podium.ts           the podium's measurements and the IK that rests his hands on it (screen 05)
+    ik.ts               two-bone IK and the bookkeeping the pose layers share
     entry.ts            star field, the orb (shell, notched band, lion head) in points, vortex, shockwave, hyperspace streaks
     post.ts             the final pass: tone map, grain, scan texture, fringing, vignette, flash, glitch, lens
     scenes.ts           the twelve stages, in page order
@@ -95,16 +104,16 @@ public/assets/lion/     lion.glb, written by npm run mascot
 |---|---|---|---|---|
 | 01 | `#lion` | The lion | sitting-idle, on a throne in a red floor ring | a throne room: columns, pointed windows, red banners, a dais and a runner |
 | 02 | `#name` | Why the name | — | "THE LION'S SHARE" in giant 3D points, slowly turning; a glowing gold coin rising at the bottom edge |
-| 03 | `#stage` | On stage | clapping | spotlight cone, mic stand, gold-dust audience, a dot-matrix screen showing the emblem |
+| 03 | `#stage` | On stage | presenting on a raised round riser, a mic stand beside him | spotlight cone, a crowd of gold-dust heads and shoulders all round the riser, a dot-matrix screen showing the emblem |
 | 04 | `#hunt` | The hunt | walking, side view | a savanna horizon drawn in candlesticks, an acacia, a low striped sun; the floor scrolls under him |
-| 05 | `#pride` | The pride | idle, behind a glowing rail | drifting strips of "$ROAR" and "THE PRIDE" |
+| 05 | `#pride` | The pride | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
 | 06 | `#foryou` | For you | reaching, close up | a tunnel of rings, a halo behind his head |
 | 07 | `#summit` | The summit | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
-| 08 | `#cheers` | Cheers | toast, close up, with a coupe of gold fizz | fireworks in gold and red |
+| 08 | `#cheers` | Cheers | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
 | 09 | `#ask` | Ask the lion | typing on a glowing phone | drifting questions |
 | 10 | `#token` | The token | looking-at-hand, a coin above his palm | drifting gold coins, the emblem |
 | 11 | `#memes` | The memes | idle | the meme ring around him, gold dust on the floor |
-| 12 | `#join` | Join the pride | waving | the emblem behind him, gold light lines |
+| 12 | `#join` | Join the pride | greeting | the emblem behind him, gold light lines |
 
 The hologram is the same on the lion and the placeholder: faint bands drifting upward, a thin red rim, legs fading into the floor glow, a flicker every few seconds; he scans in from the top on arrival and dissolves on the way out.
 

@@ -43,7 +43,8 @@ export interface Stage {
   portrait?: Partial<StageCamera>
   mascot?: MascotSpot
   update?(time: number, dt: number): void
-  enter?(mascot: Mascot): void
+  /** `instant`: his first arrival (no transition), so anything that settles in should be there already. */
+  enter?(mascot: Mascot, instant: boolean): void
   leave?(mascot: Mascot): void
   clickables?: Clickable[]
 }
@@ -186,7 +187,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     mascot.root.rotation.set(0, c.rotY, 0)
     mascot.root.scale.setScalar(c.scale ?? 1)
     stage.scene.add(mascot.root)
-    mascot.play(c.clip, 0.5)
+    mascot.play(c.clip, fx.mascot.crossfade)
     mascot.uniforms.uFloorY.value = c.pos.y
   }
 
@@ -195,7 +196,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     stages[active].leave?.(mascot)
     active = index
     seatMascot(stages[active])
-    stages[active].enter?.(mascot)
+    stages[active].enter?.(mascot, false)
   }
 
   // ---- render loop ---------------------------------------------------------------
@@ -315,7 +316,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
       state.mode = 'site'
       active = index
       seatMascot(stages[active])
-      stages[active].enter?.(mascot)
+      stages[active].enter?.(mascot, true)
     },
     /**
      * The screen change: scatter out (with a glitch), swap, assemble in.

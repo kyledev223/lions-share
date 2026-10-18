@@ -19,6 +19,9 @@ try:
 except ImportError:
     print("[mascot] installing xatlas into", deps, flush=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "--target", deps, "xatlas"], check=True)
+    import importlib
+
+    importlib.invalidate_caches()  # the folder was listed (empty) by the first import attempt
     import xatlas
 
 import numpy as np

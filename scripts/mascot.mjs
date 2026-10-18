@@ -33,15 +33,16 @@ const OUT = join(root, 'public', 'assets', 'lion', 'lion.glb')
 /** Mixamo export name (lower case, no extension) → slug used by the site. */
 const RENAMES = {
   'sitting idle': 'sitting-idle',
-  clapping: 'clapping',
+  talking: 'presenting',
   walking: 'walking',
   'breathing idle': 'idle',
   'reaching out': 'reaching',
   'looking around': 'looking-up',
+  'unarmed idle looking ver. 1': 'looking-up',
   drinking: 'toast',
   'texting while standing': 'typing',
   inspecting: 'looking-at-hand',
-  waving: 'waving',
+  'standing greeting': 'greeting',
 }
 
 const log = (...a) => console.log('[mascot]', ...a)

@@ -9,8 +9,8 @@
  * the edges and a vignette.
  */
 export const fx = {
-  /** Highest device pixel ratio the canvas renders at. */
-  maxPixelRatio: 2,
+  /** Highest device pixel ratio the canvas renders at (3 = every current device at its native resolution). */
+  maxPixelRatio: 3,
 
   palette: {
     /** Primary. */
@@ -71,25 +71,48 @@ export const fx = {
     /** Brightest his lit surface gets (linear). Below the bloom threshold, so his face and shirt never glow. */
     ceiling: 0.58,
     /** Red sheen on the darkest parts of the mane toward their edges. */
-    sheen: 0.12,
+    sheen: 0,
     /** Red rim glow strength, and how tight it hugs the silhouette (higher = tighter). */
-    rim: 0.26,
-    rimPower: 5,
+    rim: 0.18,
+    rimPower: 8,
     /** Horizontal scan bands per metre of height. */
     bands: 46,
     /** Band darkness, 0–1. */
-    bandDepth: 0.14,
+    bandDepth: 0.06,
     /** Upward band speed, metres per second. */
     bandSpeed: 0.05,
     /** The slow bright band that sweeps up him every few seconds. */
-    sweep: 0.1,
+    sweep: 0.04,
     /** Seconds between flickers (randomised ±50%). */
-    flickerEvery: 4,
+    flickerEvery: 10,
     /** Depth of a flicker, 0–1. */
-    flicker: 0.3,
+    flicker: 0.14,
     /** Height above the floor (metres) over which his legs fade into the glow, and how far they fade, 0–1. */
-    floorFade: 0.42,
-    floorGlow: 0.6,
+    floorFade: 0.36,
+    floorGlow: 0.5,
+  },
+
+  /** How the lion moves. */
+  mascot: {
+    /** Playback speed per clip: gestures at about 0.8×, idles at about 0.9×, so he reads as composed. */
+    speed: {
+      idle: 0.9,
+      'sitting-idle': 0.9,
+      presenting: 0.8,
+      walking: 0.9,
+      reaching: 0.8,
+      'looking-up': 0.9,
+      toast: 0.8,
+      typing: 0.9,
+      'looking-at-hand': 0.9,
+      greeting: 0.8,
+    },
+    /** Crossfade between clips on a screen change, seconds. */
+    crossfade: 0.6,
+    /** Seconds (of clip time) at the end of each loop that ease back into its first frame. */
+    loopEase: 0.7,
+    /** Radians his gaze lifts on top of the looking-up clip (split between neck and head). */
+    lookUp: 0.5,
   },
 
   /** Particle budget. Lite mode halves every count. */

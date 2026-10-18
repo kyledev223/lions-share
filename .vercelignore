@@ -1,0 +1,7 @@
+# Source files and local-only folders: never uploaded (Vercel builds from the rest).
+assets-raw
+reference
+verify
+.venv-assets
+dist
+node_modules
