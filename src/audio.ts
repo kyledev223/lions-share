@@ -547,6 +547,29 @@ class Music {
     window.setTimeout(() => g.disconnect(), (len + 0.3) * 1000)
   }
 
+  /** Jumps: a rush of air rising over `seconds` into the sunburst's cut (where the thump lands). Silent unless the music is on. */
+  rush(seconds: number) {
+    const ctx = this.ctx
+    if (this.muted || !ctx || ctx.state !== 'running') return
+    const t = ctx.currentTime + 0.01
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.Q.value = 4
+    lp.frequency.setValueAtTime(220, t)
+    lp.frequency.exponentialRampToValueAtTime(3200, t + seconds)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.1, t + seconds * 0.95)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + seconds + 0.12)
+    const noise = ctx.createBufferSource()
+    noise.buffer = this.noise
+    noise.loop = true
+    noise.connect(lp).connect(g).connect(this.master)
+    noise.start(t, Math.random() * 0.5)
+    noise.stop(t + seconds + 0.15)
+    window.setTimeout(() => g.disconnect(), (seconds + 0.4) * 1000)
+  }
+
   /** Screen changes: the low thump as the claw lands (a falling sine and a muffled knock). Silent unless the music is on. */
   thump() {
     const ctx = this.ctx

@@ -15,6 +15,9 @@ import { fx } from '../fx-config'
  * sliding a few pixels along it on either side. It lives for `uClawLen` seconds
  * (`uClawT` runs 0 → uClawLen). In lite mode it is a single soft red wipe.
  *
+ * The sunburst (jumps): the picture breaks into a mane of cells, rings × spokes round the centre,
+ * each a soft dot drawn in from further out, twisted and blurred along its spoke (`uSun` 0–1).
+ *
  * Strengths come from src/fx-config.ts.
  */
 export function finalPass() {
@@ -55,6 +58,9 @@ export function finalPass() {
       /** Reduced motion: the previous frame, faded out over the new one. */
       uPrev: { value: null as THREE.Texture | null },
       uPrevMix: { value: 0 },
+      /** Jumps: the sunburst, 0–1, and which way it twists (+1 / −1). */
+      uSun: { value: 0 },
+      uSunDir: { value: 1 },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -90,7 +96,35 @@ export function finalPass() {
       uniform vec3 uDeep;
       uniform sampler2D uPrev;
       uniform float uPrevMix;
+      uniform float uSun;
+      uniform float uSunDir;
       varying vec2 vUv;
+
+      // The sunburst: the frame as a mane of cells (rings × spokes round the centre), each a soft
+      // dot of the picture drawn in from further out, twisted and blurred along its spoke.
+      vec3 sunburst(vec2 frag, float s) {
+        const float TAU = 6.28318;
+        vec2 c = 0.5 * uRes;
+        vec2 q = frag - c;
+        float R = 0.5 * length(uRes);
+        float r = length(q) / R;
+        float a = atan(q.y, q.x) / TAU + 0.5;
+        float rings = mix(120.0, 16.0, s);
+        float spokes = floor(mix(300.0, 44.0, s));
+        vec2 cell = vec2(r * rings, a * spokes);
+        vec2 local = fract(cell) - 0.5;
+        float rc = (floor(cell.x) + 0.5) / rings;
+        float ac = ((floor(cell.y) + 0.5) / spokes - 0.5) * TAU + ${fx.transition.jump.twist.toFixed(3)} * s * uSunDir;
+        float rs = rc * (1.0 + 0.65 * s);
+        vec3 acc = vec3(0.0);
+        for (int i = 0; i < 6; i++) {
+          float rr = rs * (1.0 - 0.12 * s * float(i) / 5.0);
+          acc += texture2D(tDiffuse, (c + vec2(cos(ac), sin(ac)) * rr * R) / uRes).rgb;
+        }
+        acc /= 6.0;
+        float dotm = smoothstep(0.62, 0.15, length(local * vec2(1.0, 0.8)));
+        return acc * mix(0.82, 1.2, dotm) * mix(vec3(1.0), vec3(1.14, 0.98, 0.72), s) + vec3(0.9, 0.62, 0.22) * 0.05 * s * dotm;
+      }
 
       float hash(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
@@ -106,6 +140,8 @@ export function finalPass() {
 
       // One claw cut: x = distance across it (px, signed), y = strength there (drawn, alive, tapered).
       vec2 cut(vec2 frag, float i) {
+        // A light claw (amount under 0.75) makes two cuts, not three.
+        if (i > 1.5 && uClawAmt < 0.75) return vec2(1e4, 0.0);
         float h1 = hash(vec2(uClawSeed, i * 7.1 + 1.0));
         float h2 = hash(vec2(uClawSeed + 3.7, i * 3.3 + 2.0));
         // From top-right to bottom-left going forward (mirrored going back), each a little steeper or shallower.
@@ -169,6 +205,9 @@ export function finalPass() {
           texture2D(tDiffuse, uv).g,
           texture2D(tDiffuse, uv - off).b
         );
+
+        // Jumps: the sunburst takes over the picture.
+        if (uSun > 0.001) col = mix(col, sunburst(frag, uSun), smoothstep(0.0, 0.2, uSun));
 
         // Row smear: in some bands the bright parts streak sideways.
         if (uSmear > 0.001) {

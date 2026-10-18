@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { music } from './audio'
+import { fx } from './fx-config'
 import type { Engine } from './gl/engine'
 import { scramble } from './scramble'
 import type { ScreenView } from './screens'
@@ -61,12 +62,13 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
    * (0.12–0.52s), and flashes out as the new tick's line grows. Ticks it passes on a jump blink.
    */
   const tickY = (i: number) => ticks[i].offsetTop + ticks[i].offsetHeight / 2
+  let beadRun: gsap.core.Timeline | null = null
   function runBead(from: number, to: number) {
     gsap.killTweensOf(bead)
     // Measured once per run: reading layout every frame while the copy animates would force a reflow each time.
     const ys = ticks.map((_t, i) => tickY(i))
     let near = from
-    gsap
+    beadRun = gsap
       .timeline()
       .set(bead, { y: ys[from], autoAlpha: 0, scale: 0.4 })
       .to(bead, { autoAlpha: 1, scale: 1, duration: 0.12, ease: 'power2.out' })
@@ -169,42 +171,70 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   views[0].el.classList.add('is-active')
   views.forEach((v, i) => i && gsap.set(v.el, { autoAlpha: 0 }))
 
-  function go(to: number, pushHistory = true) {
+  /** The change under way: which way it goes, and how to undo the copy if the visitor flicks back. */
+  let moving: { dir: number; from: ScreenView } | null = null
+
+  /**
+   * `jump`: arriving from the rail, a link or Home/End rather than a step. Only a jump of more than
+   * one screen gets the sunburst; a rail click to a neighbour is just a step.
+   */
+  function go(to: number, pushHistory = true, jump = false) {
     if (busy || to === index || to < 0 || to >= count) return
     busy = true
     const from = views[index]
     const next = views[to]
     const dir = to > index ? 1 : -1
+    const far = jump && Math.abs(to - index) > 1
+    moving = { dir, from }
     from.leave(dir)
     runBead(index, to)
-    music.whoosh('out')
+    if (far) music.rush(fx.transition.jump.cut)
+    else music.whoosh('out')
     void engine
-      .go(to, () => {
-        from.el.classList.remove('is-active')
-        gsap.set(from.el, { autoAlpha: 0 })
-        index = to
-        next.el.classList.add('is-active')
-        gsap.set(next.el, { autoAlpha: 1, y: 0 })
-        next.intro?.restart()
-        reflect(pushHistory, true)
-        // The claw lands: a low thump, then the air settles.
-        music.thump()
-        music.whoosh('in')
-      })
+      .go(
+        to,
+        () => {
+          from.el.classList.remove('is-active')
+          gsap.set(from.el, { autoAlpha: 0 })
+          index = to
+          next.el.classList.add('is-active')
+          gsap.set(next.el, { autoAlpha: 1, y: 0 })
+          next.intro?.restart()
+          reflect(pushHistory, true)
+          // The claw (or the sunburst's cut) lands: a low thump, then the air settles.
+          music.thump()
+          music.whoosh('in')
+        },
+        far,
+      )
       .then(() => {
         busy = false
+        moving = null
         settling = true
       })
   }
 
-  const next = () => go(index + 1)
-  const prev = () => go(index - 1)
+  /**
+   * A flick the other way early in a step turns it back (fx.transition.reverseWithin): the engine plays
+   * it back to rest, and the copy and the bead go back with it. True if it turned.
+   */
+  function turnBack(dir: number) {
+    if (!moving || dir !== -moving.dir || !engine.reverse()) return false
+    moving.from.stay()
+    beadRun?.reverse()
+    return true
+  }
+
+  const next = () => (busy ? void turnBack(1) : go(index + 1))
+  const prev = () => (busy ? void turnBack(-1) : go(index - 1))
   const blocked = () => locked || paused || busy
   /** Someone is typing in a field (screen 09's question box): the wheel and swipes leave the screen alone. Esc leaves the field. */
   const typing = () => !!(document.activeElement as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')
 
   // ---- wheel / trackpad --------------------------------------------------------
   let acc = 0
+  /** Wheel distance flicked against the change under way. */
+  let back = 0
   let lastAt = 0
   let lastMag = 0
   /** After a transition: ignoring the leftover inertia of the flick that caused it. */
@@ -221,6 +251,13 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
       const mag = Math.abs(dy)
       const prevMag = lastMag
       lastMag = mag
+      if (busy && !locked && !paused && !typing() && moving && Math.sign(dy) === -moving.dir) {
+        // A new flick the other way while a step is under way: maybe turn it back.
+        back += mag
+        if (back >= WHEEL_STEP && turnBack(-moving.dir)) back = 0
+        return
+      }
+      back = 0
       if (blocked() || typing()) {
         acc = 0
         return
@@ -248,7 +285,7 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   window.addEventListener(
     'touchend',
     (e) => {
-      if (!touch || blocked() || typing()) return
+      if (!touch || locked || paused || typing() || (busy && !moving)) return
       const dx = e.changedTouches[0].clientX - touch.x
       const dy = e.changedTouches[0].clientY - touch.y
       touch = null
@@ -280,10 +317,10 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
         e.shiftKey ? prev() : next()
         break
       case 'Home':
-        go(0)
+        go(0, true, true)
         break
       case 'End':
-        go(count - 1)
+        go(count - 1, true, true)
         break
       default:
         handled = false
@@ -295,12 +332,12 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
   ticks.forEach((t, i) =>
     t.addEventListener('click', (e) => {
       e.preventDefault()
-      if (!locked) go(i)
+      if (!locked) go(i, true, true)
     }),
   )
   const fromHash = () => {
     const i = indexOfHash()
-    if (!locked) go(i < 0 ? 0 : i, false)
+    if (!locked) go(i < 0 ? 0 : i, false, true)
   }
   window.addEventListener('popstate', fromHash)
   window.addEventListener('hashchange', fromHash)

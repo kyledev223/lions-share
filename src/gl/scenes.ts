@@ -326,6 +326,7 @@ function throneRoom(): Stage {
   motes(scene, 105, V(-8, 0, -9), V(8, 6, 3), 1400)
   return {
     id: 'lion',
+    transition: { claw: 'full', wind: [0, 0.4, 0] }, // his throne's rays: the points rise
     scene,
     camera: { pos: V(-0.95, 1.4, 5.1), target: V(-0.95, 1.0, 0), fov: 38 },
     // Back into the throne from where the clip sits him.
@@ -353,6 +354,7 @@ function theName(emblem: Stamp): Stage {
   cloud(coinGroup, 203, (c) => coin(c, emblem, 1.2, 4400, (r) => (r < 0.62 ? C.gold : r < 0.86 ? C.white : C.light), 1.25), { drift: 0.004, twinkle: 0.4 })
   return {
     id: 'name',
+    transition: { claw: 'light', wind: [0.3, 0.5, 0] }, // stars drifting up into the name
     scene,
     camera: { pos: V(0, 0, 8.4), target: V(0, 0, 0), fov: 42 },
     portrait: { pos: V(1.4, 0, 12), target: V(1.4, 0, 0), fov: 52 },
@@ -495,6 +497,7 @@ function onStage(emblem: Stamp): Stage {
   motes(scene, 305, V(-6, HALL, -5), V(6, 6, 2), 1200)
   return {
     id: 'stage',
+    transition: { claw: 'full', wind: [0, 0.6, 0.2], swing: 12 }, // a roar from the hall
     scene,
     // At the crowd's eye level, so the front rows overlap his feet.
     camera: { pos: V(0.95, 1.05, 5.6), target: V(0.95, 1.25, 0), fov: 40 },
@@ -576,6 +579,7 @@ function theHunt(): Stage {
   motes(scene, 403, V(-8, 0, -8), V(8, 5, 3), 1600, goldMix)
   return {
     id: 'hunt',
+    transition: { claw: 'light', wind: [0.8, 0, 0], swing: -10 }, // streaming out behind his stride
     scene,
     camera: { pos: V(-0.9, 1.2, 4.6), target: V(-0.9, 1.05, 0), fov: 38 },
     mascot: { pos: V(0, 0, 0), rotY: -Math.PI / 2, clip: 'walking' },
@@ -649,6 +653,7 @@ function thePride(emblem: Stamp): Stage {
   motes(scene, 522, V(-7, 0, -6), V(7, 5, 3), 1200)
   return {
     id: 'pride',
+    transition: { claw: 'full', wind: [0, 0.2, 0], swing: 10 },
     scene,
     // Close, from the thighs up, like a press shot.
     camera: { pos: V(-0.5, 1.42, 2.95), target: V(-0.5, 1.22, 0), fov: 38 },
@@ -749,6 +754,7 @@ function forYou(emblem: Stamp): Stage {
   }
   return {
     id: 'foryou',
+    transition: { claw: 'light', wind: [0, 0, 0.6] }, // toward you
     scene,
     camera: { pos: CAM, target: V(CAM.x, 1.42, 0), fov: 40 },
     portrait: { pos: PORTRAIT, target: V(PORTRAIT.x, 1.2, 0), fov: 50 },
@@ -805,6 +811,7 @@ function theSummit(emblem: Stamp): Stage {
   motes(scene, 704, V(-7, 0, -8), V(7, 8, 3), 1500, redMix)
   return {
     id: 'summit',
+    transition: { claw: 'full', wind: [0, 1, 0], swing: 18, wash: '#5a0a12' }, // up the red beam
     scene,
     camera: { pos: V(0.15, 2.1, 7.6), target: V(0.15, 2.4, 0), fov: 44 },
     mascot: { pos: V(0, 0, 0), rotY: Math.PI, clip: 'looking-up', scale: 0.85 },
@@ -941,6 +948,7 @@ function cheers(): Stage {
   const held = prop(scene, glass, (m, g) => onHand(m, 'Left', g, GLASS_AT, GLASS_TURN))
   return {
     id: 'cheers',
+    transition: { claw: 'light', wind: [0, 0.8, 0.2], swing: -12, wash: '#4a3410' }, // rising like the fizz
     scene,
     camera: { pos: V(-0.55, 1.62, 1.75), target: V(-0.55, 1.48, 0), fov: 42 },
     portrait: { pos: V(0, 1.55, 2.6), target: V(0, 1.45, 0), fov: 50 },
@@ -1166,6 +1174,7 @@ function askTheLion(link: AskLink): Stage {
 
   return {
     id: 'ask',
+    transition: { claw: 'light', wind: [0, -0.7, 0], swing: 8 }, // dropping like water into the pool
     scene,
     // Lower and closer than the other screens, so the ledge stands up out of the water and the pool fills the bottom third.
     camera: { pos: V(-0.6, 1.0, 4.4), target: V(-0.6, 0.5, 0), fov: 40 },
@@ -1436,6 +1445,7 @@ function theToken(emblem: Stamp, lion: Stamp): Stage {
   hide()
   return {
     id: 'token',
+    transition: { claw: 'full', wind: [0, 0.5, 0], swing: -14, wash: '#4a3812' }, // gold
     scene,
     camera: { pos: V(-0.9, 1.35, 4.7), target: V(-0.9, 1.15, 0), fov: 38 },
     // The pose is a layer over the idle clip (trophy.ts): his breathing stays, the arm holds.
@@ -1479,6 +1489,7 @@ function theMemes({ ring: memeRing, openMeme }: SceneDeps): Stage {
   }))
   return {
     id: 'memes',
+    transition: { claw: 'light', wind: [0.5, 0.2, 0], swing: 20 }, // round with the ring
     scene,
     camera: { pos: V(-0.55, 1.75, 6.4), target: V(-0.55, 1.2, 0), fov: 40 },
     portrait: { pos: V(0, 2.1, 9.5), target: V(0, 1.2, 0), fov: 52 },
@@ -1616,6 +1627,7 @@ function joinThePride(emblem: Stamp): Stage {
   const hips = new THREE.Vector3()
   return {
     id: 'join',
+    transition: { claw: 'full', wind: [0, 0, 0.9], swing: -8 }, // walking out toward you
     scene,
     camera: { pos: CAM, target: V(CAM.x, 1.24, 0), fov: 31 },
     portrait: { pos: PORTRAIT, target: V(PORTRAIT.x, -0.3, 0), fov: 50 },

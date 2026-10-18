@@ -165,6 +165,14 @@ export const fx = {
     embers: [0.2, 0.98] as [number, number],
     /** Reduced motion: a plain crossfade. */
     reducedFade: 0.4,
+    /**
+     * Jumps (the rail, a link, Home/End, more than one screen away): the "sunburst". The frame breaks
+     * into a mane of rings and spokes that draws in toward the centre and twists, cuts to the new
+     * screen at `cut`, and opens back out by `open`.
+     */
+    jump: { cut: 0.45, open: 1.25, twist: 0.14 },
+    /** An opposite flick this soon (seconds) turns the change back instead of queueing another. */
+    reverseWithin: 0.3,
   },
 }
 

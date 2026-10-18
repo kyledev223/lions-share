@@ -289,6 +289,8 @@ export interface ScreenView {
   intro: gsap.core.Timeline | null
   /** The copy leaving (~0.35s): the headline drops letter by letter, the rest slides away; +1 forward, −1 back. */
   leave(dir: number): void
+  /** The visitor flicked back before the change: the leaving copy comes back the way it went. */
+  stay(): void
 }
 
 export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[] {
@@ -307,7 +309,7 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
     const still = (on: boolean) => heads.forEach((h) => h.classList.toggle('is-still', on))
     if (reduced) {
       still(true)
-      return { def, el, intro: null, leave() {} }
+      return { def, el, intro: null, leave() {}, stay() {} }
     }
     const chars = el.querySelectorAll('.line__in .ch')
     const blocks = el.querySelectorAll('.screen__copy [data-in]')
@@ -333,6 +335,11 @@ export function renderScreens(host: HTMLElement, reduced: boolean): ScreenView[]
       out.to(blocks, { autoAlpha: 0, y: 16 * dir, duration: 0.3, stagger: 0.03, ease: 'power2.in' }, 0.02)
       if (aside) out.to(aside, { autoAlpha: 0, x: 24, duration: 0.3, ease: 'power2.in' }, 0.04)
     }
-    return { def, el, intro, leave }
+    const stay = () => {
+      if (!out) return
+      out.eventCallback('onReverseComplete', () => still(true))
+      out.reverse()
+    }
+    return { def, el, intro, leave, stay }
   })
 }

@@ -31,6 +31,8 @@ export const shared = {
   /** What the flight swirls round (world), and which way (+1 / −1) and how far (radians). */
   uPivot: { value: new THREE.Vector3() },
   uSwirl: { value: 1 },
+  /** The screen's own drift for points in flight (world units at full flight), e.g. up on the summit. */
+  uWind: { value: new THREE.Vector3() },
   /** Share of points that take flight (lite mode: half); the rest just dim a little. */
   uFlightShare: { value: 1 },
   uGold: { value: new THREE.Color(fx.palette.gold) },
@@ -62,6 +64,7 @@ uniform float uOwn;       // a cloud's own gather on top (06's gift, 10's coin)
 uniform float uMorph;
 uniform vec3 uPivot;
 uniform float uSwirl;
+uniform vec3 uWind;
 uniform float uFlightShare;
 uniform vec3 uGold;
 uniform float uProj;
@@ -113,6 +116,7 @@ void main() {
     d.xz = mat2(c, -sn, sn, c) * d.xz * (1.0 + m * flies * 0.18 * (0.5 + r.z));
     d.y += m * flies * (0.25 + 0.6 * r.z) * (r.y - 0.35);
     d += vec3(sin(wp.y * 1.7 + uTime * 0.9 + s), sin(wp.z * 1.5 + uTime * 0.7 + s * 2.0), sin(wp.x * 1.6 - uTime * 0.8 + s * 3.0)) * m * flies * 0.22;
+    d += uWind * m * flies * (0.4 + r.x);
     wp.xyz = uPivot + d;
     m *= mix(0.45, 1.0, flies);
   }

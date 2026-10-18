@@ -24,6 +24,21 @@ export interface StageCamera {
   fov: number
 }
 
+/**
+ * A screen's own flavour of the pounce, so changes don't all look alike. All optional.
+ *   claw   the cut when arriving here: 'full' (three cuts, tear, smear), 'light' (two fainter cuts,
+ *          less tear), 'none' (only the wash and colour split)
+ *   wash   the colour the blacks lift toward mid-change (CSS colour; default: measured from the stage)
+ *   wind   which way this screen's points drift while in flight (world units, at full flight)
+ *   swing  extra degrees the camera swings round him at the midpoint arriving here, in the direction of travel
+ */
+export interface TransitionLook {
+  claw?: 'full' | 'light' | 'none'
+  wash?: string
+  wind?: [number, number, number]
+  swing?: number
+}
+
 export interface MascotSpot {
   /** Where his feet are. */
   pos: THREE.Vector3
@@ -48,6 +63,8 @@ export interface Stage {
    * round him and carry him out of (and back into) the frame.
    */
   offstage?: MascotSpot
+  /** How screen changes into this screen (and its points on the way out) behave; see TransitionLook. */
+  transition?: TransitionLook
   update?(time: number, dt: number): void
   /** Runs just before the stage is drawn, with the camera placed (e.g. to render a reflection). */
   beforeRender?(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void
@@ -253,7 +270,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     toRel(to, restView(to, viewTmp), relB)
     const C = fx.transition.camera
     const lerp = THREE.MathUtils.lerp
-    relNow.a = relA.a + turn(relA.a, relB.a, dir) * k
+    // The arriving screen can ask for an extra swing round him at the midpoint, the way the visitor is going.
+    relNow.a = relA.a + turn(relA.a, relB.a, dir) * k + THREE.MathUtils.degToRad(to.transition?.swing ?? 0) * bump * dir
     relNow.r = lerp(relA.r, relB.r, k) * (1 + C.pull * bump)
     relNow.y = lerp(relA.y, relB.y, k) + C.rise * bump
     relNow.ta = relA.ta + turn(relA.ta, relB.ta, dir) * k
@@ -266,7 +284,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
   const view: View = { pos: new THREE.Vector3(), tgt: new THREE.Vector3(), fov: 40 }
   function placeCamera(stage: Stage, time: number) {
     const portrait = width / height < 0.85
-    if (trans && !trans.reduced) {
+    if (trans?.kind === 'step') {
       const { k, bump } = trans.cam
       journey(stages[trans.from], stages[trans.to], stage, k, bump, trans.dir, view)
     } else restView(stage, view)
@@ -302,7 +320,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     mascot.root.position.copy(c.pos)
     mascot.root.rotation.set(0, c.rotY, 0)
     mascot.root.scale.setScalar(c.scale ?? 1)
-    mascot.root.visible = !!stage.mascot || (!!trans && !trans.reduced)
+    mascot.root.visible = !!stage.mascot || trans?.kind === 'step'
     stage.scene.add(mascot.root)
     mascot.play(c.clip, fx.mascot.crossfade, c.speed)
     mascot.uniforms.uFloorY.value = c.pos.y
@@ -321,46 +339,71 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
   function setStage(index: number) {
     if (index === active && mascot.root.parent === stages[index].scene) return
     if (state.mode === 'site' && opts.reduced && prevTex && !trans) {
-      trans = { from: active, to: index, dir: 1, t0: -1, swapped: false, clip: false, reduced: true, cam: { k: 0, bump: 0 }, frames: [], onSwap: () => {}, unlock: () => {} }
+      trans = newTransition(index, () => {}, () => {}, 'reduced')
       return
     }
     swapTo(index)
   }
 
   // ---- the screen change ----------------------------------------------------------
+  type Kind = 'step' | 'jump' | 'reduced'
   interface Transition {
     from: number
     to: number
     dir: number
+    kind: Kind
     /** Start time (s, the loop's clock); −1 until its first frame. */
     t0: number
     swapped: boolean
     clip: boolean
-    reduced: boolean
     cam: { k: number; bump: number }
+    /** Set when the visitor flicks back in time: playing backwards from `at` (s) since `t0` (loop clock). */
+    back: { at: number; t0: number } | null
     /** Frame times (ms) while it runs, for ?debug. */
     frames: number[]
     onSwap(): void
     unlock(): void
   }
   let trans: Transition | null = null
+  const newTransition = (to: number, onSwap: () => void, unlock: () => void, kind: Kind): Transition => ({
+    from: active,
+    to,
+    dir: to > active ? 1 : -1,
+    kind,
+    t0: -1,
+    swapped: false,
+    clip: false,
+    cam: { k: 0, bump: 0 },
+    back: null,
+    frames: [],
+    onSwap,
+    unlock,
+  })
   /** Frame-time summary of the last screen change, for ?debug. */
   let lastStats = ''
   const washNow = new THREE.Color()
   const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
   const span = (t: number, a: number, b: number) => clamp01((t - a) / (b - a))
   const smoother = (x: number) => x * x * x * (x * (x * 6 - 15) + 10)
+  const lookOf = (i: number) => stages[i].transition ?? {}
+  const CLAW = { full: 1, light: 0.5, none: 0 } as const
+  const windOf = (i: number) => lookOf(i).wind ?? [0, 0.15, 0]
 
-  /** Advances the screen change to time `T` (s since it started): every envelope comes from here. */
-  function tickTransition(tr: Transition, T: number) {
+  /** Advances the screen change to the loop's `time`: every envelope comes from here. */
+  function tickTransition(tr: Transition, time: number) {
     const X = fx.transition
-    if (tr.reduced) {
+    // Flicked back: run the clock backwards (a little quicker) to the start, then stop where it began.
+    const T = tr.back ? tr.back.at - (time - tr.back.t0) * 1.5 : time - tr.t0
+    if (tr.back && T <= 0) return settleBack(tr)
+    if (tr.kind === 'reduced') {
       post.uPrevMix.value = 1 - smoother(span(T, 0, X.reducedFade))
       if (T >= X.reducedFade) finish(tr)
       return
     }
+    if (tr.kind === 'jump') return tickJump(tr, T)
+
     // The clip starts blending to the next screen's, and the old pose layer lets go before the swap.
-    if (!tr.clip && T >= X.clip.at) {
+    if (!tr.clip && !tr.back && T >= X.clip.at) {
       tr.clip = true
       const spot = spotOf(stages[tr.to])
       mascot.setOverlay(null, X.clip.release)
@@ -380,26 +423,64 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     const ks = !stages[tr.from].mascot ? 0.8 : !stages[tr.to].mascot ? 0.2 : 0.45
     tr.cam.k = T < X.swap ? ks * span(T, 0, X.swap) ** 2 : ks + (1 - ks) * (1 - (1 - span(T, X.swap, X.camera.end)) ** 2)
     tr.cam.bump = T < X.swap ? Math.sin((Math.PI / 2) * (T / X.swap)) : Math.cos((Math.PI / 2) * span(T, X.swap, X.camera.end))
-    // Points: lift off (each on its own beat), swirl; the new stage's settle in.
+    // Points: lift off (each on its own beat), swirl and drift with the screen's wind; the new stage's settle in.
     const [o0, o1] = X.flight.out
     const [i0, i1] = X.flight.in
     shared.uMorph.value = T < X.swap ? span(T, o0, o1) ** 2 : 1 - (1 - (1 - span(T, i0, i1)) ** 3)
+    shared.uWind.value.fromArray(windOf(tr.swapped ? tr.to : tr.from))
     // Props and lights dim toward the swap and come back after.
     const P = X.presence
     shared.uAssemble.value = T < X.swap ? 1 - (1 - P) * span(T, 0.15, X.swap) ** 2 : P + (1 - P) * (1 - (1 - span(T, X.swap, 1.1)) ** 2)
-    // The claw: one sharp hit centred on the swap.
+    // The claw: one sharp hit centred on the swap, as strong as the arriving screen asks.
+    const amt = CLAW[lookOf(tr.to).claw ?? 'full']
     const c = T - (X.swap - X.claw / 2)
     const hit = c >= 0 && c <= X.claw ? Math.sin((Math.PI * c) / X.claw) ** 2 : 0
-    post.uClawT.value = c >= 0 && c <= X.claw ? c : -1
-    post.uGlitch.value = hit * 0.28
-    post.uBurst.value = hit * 0.45
-    post.uSmear.value = lite.on ? 0 : hit
+    post.uClawT.value = c >= 0 && c <= X.claw && amt > 0 ? c : -1
+    post.uClawAmt.value = amt
+    post.uGlitch.value = hit * 0.28 * amt
+    post.uBurst.value = hit * 0.45 * (0.5 + amt * 0.5)
+    post.uSmear.value = lite.on ? 0 : hit * amt
     // The blacks lift toward the wash, sliding from the old stage's to the new one's.
     post.uLift.value = X.lift * tr.cam.bump ** 1.5
     post.uWash.value.copy(washNow.copy(washes[tr.from]).lerp(washes[tr.to], tr.cam.k))
     // Gold embers off his outline, rising to the claw and settling back.
     mascot.uniforms.uEmber.value = Math.sin(Math.PI * span(T, X.embers[0], X.embers[1])) * 0.9
     if (T >= X.end) finish(tr)
+  }
+
+  /**
+   * A jump: no journey (the screens in between are skipped, not flown through). The frame draws in
+   * to a sunburst, cuts to the new screen at its peak, and opens back out of it.
+   */
+  function tickJump(tr: Transition, T: number) {
+    const X = fx.transition
+    const J = X.jump
+    if (!tr.swapped && T >= J.cut) {
+      tr.swapped = true
+      swapTo(tr.to)
+      tr.onSwap()
+    }
+    if (T >= X.unlock) tr.unlock()
+    const sun = T < J.cut ? span(T, 0, J.cut) ** 1.3 : 1 - smoother(span(T, J.cut, J.open))
+    post.uSun.value = sun
+    post.uBurst.value = sun * 0.25
+    shared.uMorph.value = T < J.cut ? 0.6 * span(T, 0.05, J.cut) ** 2 : 0.8 * (1 - smoother(span(T, J.cut, 1.15)))
+    shared.uWind.value.fromArray(windOf(tr.swapped ? tr.to : tr.from))
+    const P = X.presence
+    shared.uAssemble.value = T < J.cut ? 1 - (1 - P) * span(T, 0.1, J.cut) ** 2 : P + (1 - P) * smoother(span(T, J.cut, 1.1))
+    post.uLift.value = X.lift * 0.6 * sun
+    post.uWash.value.copy(washNow.copy(washes[tr.from]).lerp(washes[tr.to], span(T, 0, J.open)))
+    if (T >= X.end) finish(tr)
+  }
+
+  /** Clears everything a change sets. */
+  function rest() {
+    shared.uMorph.value = 0
+    shared.uAssemble.value = 1
+    post.uClawT.value = -1
+    post.uGlitch.value = post.uBurst.value = post.uSmear.value = post.uLift.value = post.uPrevMix.value = post.uSun.value = 0
+    mascot.uniforms.uEmber.value = 0
+    mascot.root.visible = !!stages[active].mascot
   }
 
   function finish(tr: Transition) {
@@ -409,18 +490,20 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
       tr.onSwap()
     }
     tr.unlock()
-    shared.uMorph.value = 0
-    shared.uAssemble.value = 1
-    post.uClawT.value = -1
-    post.uGlitch.value = post.uBurst.value = post.uSmear.value = post.uLift.value = post.uPrevMix.value = 0
-    mascot.uniforms.uEmber.value = 0
-    mascot.root.visible = !!stages[active].mascot
+    rest()
     if (tr.frames.length) {
       const f = tr.frames
       const avg = f.reduce((s, x) => s + x, 0) / f.length
-      lastStats = `last change ${stages[tr.from].id}→${stages[tr.to].id}: ${(1000 / avg).toFixed(0)} fps · avg ${avg.toFixed(1)}ms · worst ${Math.max(...f).toFixed(1)}ms · ${f.length} frames`
+      lastStats = `last change ${stages[tr.from].id}→${stages[tr.to].id} (${tr.kind}${tr.back ? ', turned back' : ''}): ${(1000 / avg).toFixed(0)} fps · avg ${avg.toFixed(1)}ms · worst ${Math.max(...f).toFixed(1)}ms · ${f.length} frames`
     }
     trans = null
+  }
+
+  /** The flick-back has played out: the old screen is still there, nothing swapped. */
+  function settleBack(tr: Transition) {
+    tr.to = tr.from
+    tr.swapped = true
+    finish(tr)
   }
 
   /**
@@ -432,6 +515,13 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
   const deep = new THREE.Color(fx.palette.deep).convertLinearToSRGB()
   function measureWash(i: number) {
     if (i < 0) return
+    // A screen can name its own (display colour, brought to the same strength).
+    const named = stages[i].transition?.wash
+    if (named) {
+      const c = washes[i].set(named).convertLinearToSRGB()
+      c.multiplyScalar(0.32 / Math.max(c.r, c.g, c.b, 1e-3))
+      return
+    }
     renderer.setRenderTarget(washRT)
     renderer.render(stages[i].scene, camera)
     renderer.setRenderTarget(null)
@@ -501,9 +591,9 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     if (trans) {
       if (trans.t0 < 0) {
         trans.t0 = time
-        snapshot = trans.reduced
+        snapshot = trans.kind === 'reduced'
       } else trans.frames.push(dt * 1000)
-      if (!snapshot) tickTransition(trans, time - trans.t0)
+      if (!snapshot) tickTransition(trans, time)
     }
 
     mascot.update(dt, time)
@@ -597,7 +687,7 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
      * changes (the copy and HUD follow it); the promise resolves when input may resume
      * (fx.transition.unlock); the picture keeps settling a little longer.
      */
-    go(index: number, onSwap: () => void): Promise<void> {
+    go(index: number, onSwap: () => void, jump = false): Promise<void> {
       return new Promise((resolve) => {
         if (trans) finish(trans)
         if (index === active) return resolve()
@@ -607,14 +697,33 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
           done = true
           resolve()
         }
-        trans = { from: active, to: index, dir: index > active ? 1 : -1, t0: -1, swapped: false, clip: false, reduced: opts.reduced, cam: { k: 0, bump: 0 }, frames: [], onSwap, unlock }
+        trans = newTransition(index, onSwap, unlock, opts.reduced ? 'reduced' : jump ? 'jump' : 'step')
         if (opts.reduced) return
         pivotOf(stages[active], shared.uPivot.value)
         shared.uSwirl.value = fx.transition.flight.swirl * trans.dir
-        post.uClawDir.value = trans.dir
+        post.uClawDir.value = post.uSunDir.value = trans.dir
         post.uClawSeed.value = Math.random() * 100
-        mascot.root.visible = true
+        if (!jump) mascot.root.visible = true
       })
+    },
+    /**
+     * An opposite flick early in a step (before fx.transition.reverseWithin): plays the change back to
+     * where it started instead of finishing it. True if it turned back; the go() promise then resolves
+     * when it is back at rest, without the swap.
+     */
+    reverse(): boolean {
+      const tr = trans
+      if (!tr || tr.kind !== 'step' || tr.back || tr.swapped || tr.t0 < 0) return false
+      const T = last - tr.t0
+      if (T > fx.transition.reverseWithin) return false
+      tr.back = { at: T, t0: last }
+      // His pose goes back to the old screen's.
+      if (tr.clip) {
+        const spot = spotOf(stages[tr.from])
+        if (spot) mascot.play(spot.clip, 0.35, spot.speed)
+        stages[tr.from].enter?.(mascot, false)
+      }
+      return true
     },
     /**
      * Draws every stage once, one per frame, so shaders are compiled and
@@ -632,7 +741,8 @@ export function createEngine(canvas: HTMLCanvasElement, parts: { stages: Stage[]
     },
     /** The clickable thing under a screen point in the active stage, if any. */
     pick(clientX: number, clientY: number): Clickable | null {
-      if (state.mode !== 'site') return null
+      // Nothing in the scene is under the cursor while it is changing.
+      if (state.mode !== 'site' || trans) return null
       const list = stages[active].clickables
       if (!list?.length) return null
       ndc.set((clientX / width) * 2 - 1, -((clientY / height) * 2 - 1))
