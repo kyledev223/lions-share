@@ -415,27 +415,27 @@ export async function createEntry(reduced: boolean) {
     uRadius: { value: 99 },
   }
 
-  // The rings ride their own group: the emblem's resting turn and the cursor tilt, but not its
-  // spin, so once they're all on they can tumble round it independently, like a gyroscope.
+  // The rings ride their own group, fixed to the camera's view: they share the coin's tremble but
+  // neither its spin nor the cursor tilt, so they always land in the same place, and once they're
+  // all on they can tumble round it independently, like a gyroscope.
   const ringGroup = new THREE.Group()
   scene.add(ringGroup)
 
   // The rings that lock on one by one as it charges: thick solid bands, all the same size (so they
-  // cross one another), turning in their own planes. Each lands tipped the same RING_TIP away from facing you, so all
-  // read as equally thick, but leaning a different way (`lean`, degrees round the view, 120° apart).
-  // radius and width ×R, notches (0 = solid), lean, turn speed; points follow the circumference.
+  // cross one another), turning in their own planes. Each lands tipped the same RING_TIP away from
+  // facing you, so all read as equally thick; `slant` is the angle of its long axis on screen in
+  // degrees (0 flat, 45 rising to the right, -45 falling): two diagonals, then a flat one.
+  // radius and width ×R, notches (0 = solid), slant, turn speed; points follow the circumference.
   // Once all are on they flip about a diameter of their own (`flip`: its angle in the ring's
   // plane; `flipSpeed`: radians a second at full tumble), each at its own speed and direction.
   const RING_R = 1.42
   const RING_W = 0.14
-  const RING_TIP = THREE.MathUtils.degToRad(40)
+  const RING_TIP = THREE.MathUtils.degToRad(50)
   const RING_SPECS = [
-    { r: RING_R, w: RING_W, dashes: 0, lean: -75, turn: 1.1, flip: 0.3, flipSpeed: 11 },
-    { r: RING_R, w: RING_W, dashes: 0, lean: 45, turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
-    { r: RING_R, w: RING_W, dashes: 0, lean: 165, turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
+    { r: RING_R, w: RING_W, dashes: 0, slant: 45, turn: 1.1, flip: 0.3, flipSpeed: 11 },
+    { r: RING_R, w: RING_W, dashes: 0, slant: -45, turn: -0.8, flip: 2.0, flipSpeed: -8.5 },
+    { r: RING_R, w: RING_W, dashes: 0, slant: 0, turn: 0.6, flip: 4.1, flipSpeed: 6.5 },
   ] as const
-  // The ring group carries the emblem's resting turn; undo it so the tips are as seen from the camera.
-  const unrest = new THREE.Quaternion().setFromEuler(EMBLEM_REST).invert()
   const rings = RING_SPECS.map((spec, ri) => {
     const c = new Cloud(130 + ri)
     for (let i = 0, k = n(6000 * (spec.r / 1.42)); i < k; i++) {
@@ -455,9 +455,10 @@ export async function createEntry(reduced: boolean) {
     const u = { ...symU, uForm: { value: 0 }, uGlow: { value: 0 }, uImplode: { value: 0 } }
     pts.material = new THREE.ShaderMaterial({ vertexShader: SYMBOL_VERT, fragmentShader: DOT_FRAG, uniforms: u, ...additive })
     const holder = new THREE.Group()
-    const lean = THREE.MathUtils.degToRad(spec.lean)
+    // Its face tips away across the long axis, so the normal leans at right angles to the slant.
+    const lean = THREE.MathUtils.degToRad(spec.slant + 90)
     const facing = new THREE.Vector3(Math.sin(RING_TIP) * Math.cos(lean), Math.sin(RING_TIP) * Math.sin(lean), Math.cos(RING_TIP))
-    const base = unrest.clone().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), facing))
+    const base = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), facing)
     holder.quaternion.copy(base)
     holder.add(pts)
     ringGroup.add(holder)
@@ -556,7 +557,6 @@ export async function createEntry(reduced: boolean) {
   const tiltAim = new THREE.Vector2()
   const tiltQ = new THREE.Quaternion()
   const restQ = new THREE.Quaternion()
-  const ringRestQ = new THREE.Quaternion().setFromEuler(EMBLEM_REST)
   const flipQ = new THREE.Quaternion()
   const euler = new THREE.Euler()
   const all =[fieldU, symU, ...rings.map((r) => r.u)]
@@ -600,7 +600,7 @@ export async function createEntry(reduced: boolean) {
       // Still at rest; it only spins once the enter sequence spins it up.
       spinAngle += dt * state.spin * state.spin * 14
       // The orb's resting turn (which the head undoes, so he faces you), then the tilt toward
-      // the cursor on top, so orb, head and rings all turn together like one coin. With no
+      // the cursor on top, so orb and head turn together like one coin. With no
       // cursor, once the enter sequence starts, or with reduced motion, it eases back square on.
       if (mouse && state.vortex === 0 && !reduced) tiltAim.set(-mouse.y * TILT, mouse.x * TILT)
       else tiltAim.set(0, 0)
@@ -617,10 +617,9 @@ export async function createEntry(reduced: boolean) {
       if (mouse && state.vortex === 0) lightAim.set(mouse.x * 1.3, mouse.y * 1.3, 0.75).normalize()
       else lightAim.copy(lightRest)
       orbU.uLight.value.lerp(lightAim, 1 - Math.exp(-dt / 0.25)).normalize()
-      // The rings share the coin's tilt and tremble but not its spin. As the gyro winds up they
+      // The rings share the coin's tremble but not its spin or tilt. As the gyro winds up they
       // tumble faster and faster and draw in tight round it, glowing hotter.
       const gyro = state.gyro * (1 - state.implode)
-      ringGroup.quaternion.multiplyQuaternions(tiltQ, ringRestQ)
       ringGroup.position.copy(emblem.position)
       ringGroup.scale.setScalar(1 - 0.16 * state.gyro * state.gyro)
       rings.forEach((r, i) => {
