@@ -32,7 +32,7 @@ export interface BootOptions {
  *      0.0–0.4  buttons drop away; a low riser starts (with sound)
  *      0.4–3.5  the field spirals into the emblem, which spins up and
  *               brightens; three thick rings lock on round it in quick
- *               succession, 0.85–1.55 (a thump and a flicker each); then
+ *               succession, 0.85–1.75 (a thump and a flicker each); then
  *               they tumble round it like a gyroscope, faster, tighter and
  *               hotter, while it charges, pulsing and trembling harder
  *      3.5–3.9  implosion to a point, a beat of darkness, then a
@@ -155,7 +155,7 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       .to(es, { spin: 1, duration: IMPLODE - 0.4, ease: 'power3.in' }, 0.4)
     // The rings land in a quick burst, one every RING_GAP, starting at FIRST_LOCK.
     const FIRST_LOCK = 0.85
-    const RING_GAP = 0.35
+    const RING_GAP = 0.45
     const ALL_ON = FIRST_LOCK + (engine.entry.ringCount - 1) * RING_GAP
     tl.to(es, { charge: 1, duration: IMPLODE - ALL_ON, ease: 'power2.in' }, ALL_ON)
       // Once they're all on, they tumble like a gyroscope, faster and tighter until the implosion.
