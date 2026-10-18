@@ -154,12 +154,13 @@ export function runBoot({ reduced, ready, progress, onEnter, onArrive }: BootOpt
       .to(es, { spin: 1, duration: IMPLODE - 0.4, ease: 'power3.in' }, 0.4)
       .to(es, { charge: 1, duration: IMPLODE - 1.4, ease: 'power2.in' }, 1.4)
     for (let i = 0; i < engine.entry.ringCount; i++) {
-      // Each ring gathers in from the scattered points and locks on with a thump and a flicker.
+      // Each ring's points rush in from the scatter, accelerating, and slam into place at `lock`:
+      // the flash, the thump and the ring's own flare all land on that moment.
       const lock = 1.2 + i * 0.6
-      tl.to(es, { rings: i + 1, duration: 0.5, ease: 'power3.out' }, lock - 0.5)
-        .call(() => withSound && music.thump(), [], lock - 0.05)
-        .to(post.uFlash, { value: 0.12 + i * 0.05, duration: 0.04, ease: 'none' }, lock - 0.05)
-        .to(post.uFlash, { value: 0, duration: 0.3, ease: 'power2.out' }, lock)
+      tl.to(es, { rings: i + 1, duration: 0.45, ease: 'power2.in' }, lock - 0.45)
+        .call(() => withSound && music.thump(), [], lock - 0.01)
+        .to(post.uFlash, { value: 0.14 + i * 0.05, duration: 0.03, ease: 'none' }, lock - 0.01)
+        .to(post.uFlash, { value: 0, duration: 0.3, ease: 'power2.out' }, lock + 0.02)
     }
     // 3.5–3.9: implode, darkness, a shockwave + flash + burst.
     tl.to(es, { implode: 1, duration: 0.18, ease: 'power3.in' }, IMPLODE)

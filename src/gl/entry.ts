@@ -107,7 +107,8 @@ vec3 hash3(float n) {
 void main() {
   vec3 p = position;
   float s = aSeed * 6.2831;
-  float f = clamp(uForm * 1.5 - aSeed * 0.5, 0.0, 1.0);
+  // Every point lands within the last few percent, so a ring locks on all at once.
+  float f = clamp(uForm * 1.12 - aSeed * 0.12, 0.0, 1.0);
   f = f * f * (3.0 - 2.0 * f);
   p += hash3(aSeed * 77.0) * (1.0 - f) * 6.0;
   p *= 1.0 - uImplode;
@@ -445,7 +446,7 @@ export async function createEntry(reduced: boolean) {
     holder.rotation.set(spec.tilt[0], spec.tilt[1], spec.tilt[2])
     holder.add(pts)
     emblem.add(holder)
-    return { holder, u, turn: spec.turn }
+    return { holder, u, turn: spec.turn, lockedAt: -1 }
   })
 
   // Soft halo behind the emblem.
@@ -601,7 +602,11 @@ export async function createEntry(reduced: boolean) {
       rings.forEach((r, i) => {
         r.holder.rotation.z = r.turn * (t * 0.6 + state.spin * 10)
         r.u.uForm.value = THREE.MathUtils.clamp(state.rings - i, 0, 1)
-        r.u.uGlow.value = state.spin * 0.6 + pulse * 1.4
+        // The moment it locks on (with the flash), the ring flares, then settles.
+        if (r.u.uForm.value >= 0.999 && r.lockedAt < 0) r.lockedAt = time
+        if (r.u.uForm.value < 0.999) r.lockedAt = -1
+        const flare = r.lockedAt < 0 ? 0 : 2.5 * Math.exp(-(time - r.lockedAt) * 7)
+        r.u.uGlow.value = state.spin * 0.6 + pulse * 1.4 + flare
         r.u.uImplode.value = state.implode
       })
       halo.material.opacity = (1 - state.implode) * (1 + state.spin * 1.5 + pulse * 2)
