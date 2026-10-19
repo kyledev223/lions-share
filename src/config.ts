@@ -75,11 +75,11 @@ export interface SiteConfig {
 export const config: SiteConfig = {
   name: 'Lion’s Share',
   ticker: '$ROAR',
-  contractAddress: null,
-  buyUrl: null,
-  explorerUrl: null,
-  communityUrl: '#',
-  followUrl: '#',
+  contractAddress: '8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
+  buyUrl: 'https://pump.fun/coin/8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
+  explorerUrl: 'https://solscan.io/token/8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
+  communityUrl: 'https://x.com/roarmemedev',
+  followUrl: 'https://x.com/roarmemedev',
   supply: 1_000_000_000,
   chain: 'Solana',
   buyback: {
