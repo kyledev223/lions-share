@@ -96,7 +96,7 @@ async function generate() {
     ${text(anton, 'SHARE', 58, 508, 214, INK)}
 
     <rect x="64" y="545" width="56" height="3" fill="${GOLD}"/>
-    ${text(sans, 'Take the lion’s share.', 138, 558, 34, INK)}
+    ${text(sans, 'The lion buys back.', 138, 558, 34, INK)}
 
     <svg x="700" y="105" width="440" height="440" viewBox="0 0 64 64">${symbol}</svg>
   </svg>`

@@ -1,13 +1,13 @@
 import gsap from 'gsap'
-import { A, allocationText, cadenceText, capText, fmtDate, fmtNumber, minHoldingText, nextSnapshotText, tokenFacts } from './airdrop'
+import { B, cadenceText, feeShareText, feeSourceText, fmtDate, fmtNumber, methodText, nextBuybackText, retired, roundTokens, sinkName, tokenFacts } from './buyback'
 import { MAX_QUESTION } from './ask'
 import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
 
 /**
  * The twelve screens: names, URL hashes, the corner label, and the copy.
- * Together they explain the $ROAR airdrops. Every figure comes from
- * config.ts (via airdrop.ts); a missing one reads "TBA". `{{double braces}}`
+ * Together they explain the $ROAR buybacks. Every figure comes from
+ * config.ts (via buyback.ts); a missing one reads "TBA". `{{double braces}}`
  * mark the phrase that gets the red highlight. The matching 3D stages are
  * in gl/scenes.ts, in the same order.
  */
@@ -63,7 +63,7 @@ const announcement = (text: string, extra: string, footer: string) => `
     <footer><span>${esc(footer)}</span></footer>
   </article>`
 
-/** Screen 03: the three steps. */
+/** Screen 03: the four steps. */
 const steps = (items: [string, string][]) => `
   <ol class="steps" data-in>
     ${items.map(([t, d], i) => `<li><span class="steps__n">${String(i + 1).padStart(2, '0')}</span><b class="steps__t">${esc(t)}</b><span class="steps__d">${mark(d)}</span></li>`).join('')}
@@ -73,34 +73,42 @@ const steps = (items: [string, string][]) => `
 const rules = (rows: { label: string; value: string }[]) =>
   `<dl class="rules" data-in>${rows.map((r) => `<div><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`).join('')}</dl>`
 
-/** Screen 04's card body: the cadence and a countdown (airdrop.ts keeps it ticking). */
+/** Screen 04's card body: the next buyback and a countdown (buyback.ts keeps it ticking). */
 const countdown = () => `
   <div class="countdown" data-countdown>
-    <span class="countdown__label">Next snapshot</span>
-    <span class="countdown__value">${esc(A.nextSnapshot ? '—' : 'TBA')}</span>
-    ${A.nextSnapshot ? `<span class="countdown__date">${esc(nextSnapshotText())}</span>` : ''}
+    <span class="countdown__label">Next buyback</span>
+    <span class="countdown__value">${esc(B.nextBuyback ? '—' : 'TBA')}</span>
+    ${B.nextBuyback ? `<span class="countdown__date">${esc(nextBuybackText())}</span>` : ''}
   </div>`
 
-/** Screen 08: every round so far, newest first. */
-const DROPS_SHOWN = 6
-const drops = () => {
-  const rounds = [...A.history].sort((a, b) => b.round - a.round)
+/** Screen 08: every buyback so far, newest first. */
+const ROUNDS_SHOWN = 6
+const history = () => {
+  const rounds = [...B.history].sort((a, b) => b.round - a.round)
   const row = (r: (typeof rounds)[number]) => `
     <li>
       <span>${esc(fmtDate(r.date))}</span>
       <span>Round ${r.round}</span>
-      <span>${esc(`${fmtNumber(r.totalSent)} ${A.rewardToken}`)}</span>
-      <span>${esc(fmtNumber(r.wallets))} wallets</span>
+      <span>${esc(roundTokens(r))}</span>
+      <span>${esc(`${fmtNumber(r.spent.amount)} ${r.spent.currency}`)} spent</span>
       ${
         r.txUrl
-          ? `<a class="drops__tx" href="${esc(r.txUrl)}" target="_blank" rel="noopener noreferrer">Tx ↗</a>`
-          : `<span class="drops__tx is-disabled" title="Coming soon">Tx</span>`
+          ? `<a class="history__tx" href="${esc(r.txUrl)}" target="_blank" rel="noopener noreferrer">Tx ↗</a>`
+          : `<span class="history__tx is-disabled" title="Coming soon">Tx</span>`
       }
     </li>`
   return `
-    <ol class="drops" data-in aria-label="Airdrop rounds">${rounds.slice(0, DROPS_SHOWN).map(row).join('')}</ol>
-    ${rounds.length > DROPS_SHOWN ? note(`Showing the latest ${DROPS_SHOWN} of ${rounds.length} rounds.`) : ''}`
+    <ol class="history" data-in aria-label="Buybacks so far">${rounds.slice(0, ROUNDS_SHOWN).map(row).join('')}</ol>
+    ${rounds.length > ROUNDS_SHOWN ? note(`Showing the latest ${ROUNDS_SHOWN} of ${rounds.length} buybacks.`) : ''}`
 }
+
+/** Screen 07: one public address with its explorer link (token.ts fills both slots from config). */
+const walletBox = (label: string, which: 'buyback' | 'burn') => `
+  <div class="cabox">
+    <span class="cabox__label">${esc(label)}</span>
+    <span class="slot" data-wallet="${which}" data-tag></span>
+  </div>
+  <div class="actions"><span class="slot" data-wallet-explorer="${which}"></span></div>`
 
 /**
  * Screen 09's live Q&A card (ask.ts fills it in): the current question and
@@ -112,153 +120,183 @@ const officeHours = () => `
     <article class="post qa__card" aria-label="Office hours: the lion’s latest answer">
       <header>
         <span class="post__avatar" style="--hue:356" aria-hidden="true"></span>
-        <span class="post__who"><b>${esc(config.name)} · Office Hours</b><small>Airdrop FAQ</small></span>
+        <span class="post__who"><b>${esc(config.name)} · Office Hours</b><small>Buyback FAQ</small></span>
         <span class="post__net qa__live"><i aria-hidden="true"></i>LIVE</span>
       </header>
       <p class="qa__q" hidden></p>
       <p class="qa__who">PINNED</p>
       <p class="qa__typing" hidden>Lion is typing<span class="qa__dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
-      <p class="post__text qa__a">Office hours are open. Ask me how the drops work: snapshots, rules, claiming, where to check. <mark>Price questions get a roar, not an answer.</mark></p>
-      <footer><time>OFFICE HOURS · AIRDROP FAQ</time></footer>
+      <p class="post__text qa__a">Office hours are open. Ask me how the buybacks work: the fees, the schedule, the burn, where to check. <mark>Price questions get a roar, not an answer.</mark></p>
+      <footer><time>OFFICE HOURS · BUYBACK FAQ</time></footer>
     </article>
     <p class="visually-hidden qa__live-text" aria-live="polite"></p>
   </div>`
 
-const capLine =
-  A.perWalletCap === null
-    ? 'And a per-wallet cap (TBA) means {{the whales can’t take it all}}.'
-    : `And no wallet can take more than ${A.perWalletCap}% of a round, so {{the whales can’t take it all}}.`
+/** Where the money comes from, in running copy: "the creator trading fees", or "the fees" while TBA. */
+const fees = B.feeSource ? `the ${B.feeSource}` : 'the fees'
+/** What happens next, as a punchline. Until `method` is set it stays true to both. */
+const fate =
+  B.method === 'lock' ? 'Then the lion locks it away.' : B.method === 'burn' ? 'Then the lion burns it.' : 'Then it’s taken out of circulation.'
+const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** Screen 03, step 3: what happens to the bought tokens, per `method`. */
+const sinkStep: [string, string] =
+  B.method === 'lock'
+    ? [`Bought ${T} is locked`, 'Held in a public lock, {{out of circulation}}.']
+    : B.method === 'burn'
+      ? [`Bought ${T} is burned`, 'Sent to an address nobody controls. {{Gone for good.}}']
+      : [`Bought ${T} is burned or locked`, 'Which one is in the published rules (TBA).']
+
+/** Screen 06 explains what taking tokens out of circulation does, for the method in config (burn until told otherwise). */
+const supplyCopy =
+  B.method === 'lock'
+    ? {
+        lede: 'Locked tokens are held out of circulation, so {{the circulating supply shrinks}}.',
+        body: 'While they stay locked, there are fewer tokens in circulation, so each one left is a larger share of what circulates. That’s arithmetic, not a promise about price.',
+      }
+    : {
+        lede: 'Burned tokens are gone permanently, so {{the circulating supply shrinks}}.',
+        body: 'A burned token can never be spent, sold or brought back. With fewer tokens left in circulation, each remaining one is a larger share of the total. That’s arithmetic, not a promise about price.',
+      }
+
+/** Old #hashes from before the buybacks, sent to the screen that took their place. */
+export const HASH_ALIASES: Record<string, string> = {
+  snapshots: 'schedule',
+  holders: 'supply',
+  drops: 'buybacks',
+}
 
 export const SCREENS: ScreenDef[] = [
   {
     id: 'hold',
     name: `Hold ${T}`,
-    sub: `Hold ${T}. The airdrops go to the holders.`,
+    sub: `Hold ${T}. The lion buys back.`,
     side: 'left',
     html: `
-      <p class="eyebrow hero__eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> THE THRONE ROOM · ${esc(T)} AIRDROPS</p>
-      <h1 class="display hero__title" aria-label="${esc(`Hold ${T}. Take the lion’s share.`)}">${lines(`HOLD ${T}.`, 'TAKE THE', 'LION’S SHARE.')}</h1>
-      ${lede(`Holders of ${T} receive airdrops. Be holding at the snapshot, and {{your share is sent straight to your wallet}}.`)}
+      <p class="eyebrow hero__eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> THE THRONE ROOM · ${esc(T)} BUYBACKS</p>
+      <h1 class="display hero__title" aria-label="${esc(`Hold ${T}. The lion buys back.`)}">${lines(`HOLD ${T}.`, 'THE LION', 'BUYS BACK.')}</h1>
+      ${lede(`A share of ${fees} is used to buy ${T} on the open market. {{${fate}}}`)}
       <div class="actions" data-in>
         <span class="slot" data-buy="primary"></span>
         <a class="btn btn--ghost" href="#how" data-goto="how">How it works <span aria-hidden="true">↓</span></a>
       </div>
-      ${note('Airdrops are discretionary community rewards. They may change or end.')}`,
+      ${note('Buybacks follow published rules. Any change is announced before it applies.')}`,
   },
   {
     id: 'name',
     name: 'Why the name',
-    sub: 'The biggest cut goes to the ones who stay.',
+    sub: 'He takes his share and puts it back.',
     side: 'left',
     html: `
       ${eyebrow('WHY THE NAME')}
       ${head('THE BIGGEST', 'SLICE.')}
-      ${lede('The lion’s share goes to {{the ones who hold}}.')}
-      ${body('When the spoils are split, one cut is always bigger. Here it doesn’t go to whoever shouts loudest or moves fastest. It goes to the holders: the ones still in the pride when the snapshot is taken.')}
-      ${note('HOLD. GET COUNTED. TAKE YOUR SHARE.')}`,
+      ${lede('The lion takes his share, then {{puts it back into the pride}}.')}
+      ${body(`When the spoils are split, one cut is always bigger. Here the lion’s cut is a share of ${fees}, and it doesn’t go into anyone’s pocket. It goes back into the pride: spent on ${T} from the open market, which is then ${retired()}.`)}
+      ${note('HE TAKES HIS SHARE. HE PUTS IT BACK.')}`,
   },
   {
     id: 'how',
     name: 'How it works',
-    sub: 'Hold, get counted, receive. Nothing to claim.',
+    sub: `Fees in. ${T} bought. ${T} ${retired()}.`,
     side: 'right',
     html: `
       ${eyebrow('ON STAGE · HOW IT WORKS')}
-      ${head('HOW THE', 'DROPS WORK.')}
+      ${head('HOW BUYBACKS', 'WORK.')}
       ${steps([
-        [`Hold ${T}`, 'In a wallet you control.'],
-        ['Be holding at the snapshot', 'One moment, one record of every holder.'],
-        ['Receive your share', 'Sent straight to your wallet. {{Nothing to claim, nothing to sign.}}'],
+        [
+          'Fees come in',
+          B.feePercent === null ? `A share of ${fees} (TBA) goes to his wallet.` : `${capFirst(feeShareText())} goes to his wallet.`,
+        ],
+        [`The lion’s wallet buys ${T}`, 'On the open market, {{like anyone else}}.'],
+        sinkStep,
+        ['Every buyback is published', 'With its transaction. {{Check it on the explorer.}}'],
       ])}
-      ${note('Airdrops are discretionary community rewards. They may change or end.')}`,
+      ${note('Buybacks follow published rules. Any change is announced before it applies.')}`,
   },
   {
-    id: 'snapshots',
-    name: 'Snapshots',
-    sub: 'One moment. One record of every holder.',
+    id: 'schedule',
+    name: 'On schedule',
+    sub: 'Fixed rules, announced in advance.',
     side: 'left',
     html: `
-      ${eyebrow('THE HUNT · SNAPSHOTS')}
-      ${head('SNAPSHOTS.')}
-      ${lede('No sign-ups, no forms, no queue. {{The snapshot does the counting.}}')}
+      ${eyebrow('THE HUNT · SCHEDULE')}
+      ${head('ON SCHEDULE.')}
+      ${lede('No whims, no surprise buys. {{Buybacks follow fixed rules, announced in advance.}}')}
       ${announcement(
-        `A snapshot is a moment-in-time record of every wallet holding ${T}. Holding when it’s taken is what counts. ${A.cadence ? `Snapshots are taken ${cadenceText()}.` : 'Snapshot schedule: TBA.'}`,
+        `Every buyback follows the same published rules: the same share of ${fees}, on the same schedule. ${B.cadence ? `Buybacks happen ${cadenceText()}.` : 'Buyback schedule: TBA.'}`,
         countdown(),
-        'SNAPSHOT SCHEDULE',
+        'BUYBACK SCHEDULE',
       )}`,
   },
   {
     id: 'rules',
     name: 'The rules',
-    sub: 'Who counts, how much, and who never does.',
+    sub: 'Published in advance. Changes announced first.',
     side: 'left',
     html: `
       ${eyebrow('THE PRIDE · THE RULES')}
       ${head('THE', 'RULES.')}
       ${rules([
-        { label: 'Minimum holding', value: minHoldingText() },
-        { label: 'Per-wallet cap', value: capText() },
-        { label: 'Never counted', value: A.exclusions.length ? A.exclusions.join(' · ') : 'None' },
+        { label: 'Fee source', value: capFirst(feeSourceText()) },
+        { label: 'Share used for buybacks', value: B.feePercent === null ? 'TBA' : `${B.feePercent}%` },
+        { label: 'Schedule', value: B.cadence ? capFirst(cadenceText()) : 'TBA' },
+        { label: `Bought ${T} is`, value: methodText() },
       ])}
-      ${note('Rules may change before any round. This page always shows the current ones.')}`,
+      ${note('These rules are published in advance. Any change is announced here before it applies.')}`,
   },
   {
-    id: 'holders',
-    name: 'Every holder',
-    sub: 'Shares in proportion. Small holders included.',
+    id: 'supply',
+    name: 'Fewer tokens',
+    sub: 'A smaller supply. The same pride.',
     side: 'left',
     html: `
-      ${eyebrow('FOR YOU · EVERY HOLDER')}
-      ${head('EVERY', 'HOLDER', 'COUNTS.')}
-      ${lede('Your share is proportional to what you hold. {{Small holders included.}}')}
-      ${body(`Above the minimum, every eligible wallet gets its cut: hold more, receive more; hold less, still receive your part. ${capLine}`)}`,
+      ${eyebrow('FOR YOU · THE SUPPLY')}
+      ${head('FEWER', 'TOKENS,', 'SAME PRIDE.')}
+      ${lede(supplyCopy.lede)}
+      ${body(supplyCopy.body)}`,
   },
   {
     id: 'proof',
     name: 'Nothing hidden',
-    sub: 'One reserve wallet. Every round published.',
+    sub: 'One public wallet. Every buyback published.',
     side: 'left',
     html: `
       ${eyebrow('THE SUMMIT · PROOF')}
       ${head('NOTHING', 'HIDDEN.')}
-      ${lede('Every drop leaves from one public reserve wallet. For every round, the snapshot, the holder list and the transactions are published, so {{anyone can check the split}}.')}`,
+      ${lede(`Every buyback is made from one public wallet, and every ${T} it buys goes to a public ${sinkName().toLowerCase()}. {{Every buyback transaction is published}}, so anyone can check.`)}`,
     aside: announcement(
-      'The airdrop reserve. Every drop is sent from this wallet, and every transfer can be checked on the explorer.',
-      `<div class="cabox">
-        <span class="cabox__label">Airdrop reserve wallet</span>
-        <span class="slot" data-reserve data-tag></span>
-      </div>
-      <div class="actions"><span class="slot" data-reserve-explorer></span></div>`,
-      `ALLOCATION · ${allocationText()}`,
+      `The buyback wallet and the ${sinkName().toLowerCase()}. Every buyback transaction is published and can be checked on the explorer.`,
+      `${walletBox('Buyback wallet', 'buyback')}${walletBox(sinkName(), 'burn')}`,
+      `FUNDED BY · ${feeShareText()}`,
     ),
   },
   {
-    id: 'drops',
-    name: 'Drops so far',
-    sub: 'Every round, on the record.',
+    id: 'buybacks',
+    name: 'Buybacks so far',
+    sub: 'Every buyback, on the record.',
     side: 'left',
     html: `
       ${eyebrow('CHEERS · THE RECORD')}
-      ${head('DROPS', 'SO FAR.')}
+      ${head('BUYBACKS', 'SO FAR.')}
       ${
-        A.history.length
-          ? `${lede(`Raise something golden: ${A.history.length} ${A.history.length === 1 ? 'round' : 'rounds'} sent, {{every one on the record}}.`)}${drops()}`
-          : `${lede('The first drop is coming. {{Be holding when it lands.}}')}${note('Every round will be listed here: the date, the total sent, the wallets and the transactions.')}`
+        B.history.length
+          ? `${lede(`Raise something golden: ${B.history.length} ${B.history.length === 1 ? 'buyback' : 'buybacks'} made, {{every one on the record}}.`)}${facts([tokenFacts().burned, tokenFacts().circulating])}${history()}`
+          : `${lede('The first buyback is coming. {{It goes on the record the moment it lands.}}')}${note(`Every buyback will be listed here: the date, what was spent, the ${T} bought and ${retired()}, and the transaction.`)}`
       }`,
   },
   {
     id: 'ask',
     name: 'Ask the lion',
-    sub: 'Airdrop questions, answered from the rock.',
+    sub: 'Buyback questions, answered from the rock.',
     side: 'left',
     html: `
-      ${eyebrow('OFFICE HOURS · AIRDROP FAQ')}
+      ${eyebrow('OFFICE HOURS · BUYBACK FAQ')}
       ${head('ASK THE', 'LION.')}
-      ${lede('He’s up on the ledge above the water. Drop a question in and watch it float up to him. {{Ask about the drops}}: snapshots, rules, claiming, where to check.')}
+      ${lede('He’s up on the ledge above the water. Drop a question in and watch it float up to him. {{Ask about the buybacks}}: the fees, the schedule, the burn, where to check.')}
       <form class="ask" data-in autocomplete="off" novalidate>
         <label class="visually-hidden" for="askInput">Your question for the lion</label>
         <span class="ask__field">
-          <input id="askInput" type="text" maxlength="${MAX_QUESTION}" placeholder="Ask about the airdrops…" enterkeyhint="send" spellcheck="false" />
+          <input id="askInput" type="text" maxlength="${MAX_QUESTION}" placeholder="Ask about the buybacks…" enterkeyhint="send" spellcheck="false" />
           <span class="ask__count" aria-hidden="true"></span>
         </span>
         <button class="btn btn--gold" type="submit">Ask</button>
@@ -269,13 +307,13 @@ export const SCREENS: ScreenDef[] = [
   {
     id: 'token',
     name: 'The token',
-    sub: `${T}. The token that puts you in line for the drops.`,
+    sub: `${T}. The meme token of the pride.`,
     side: 'left',
     html: `
       ${eyebrow(`THE TOKEN · CHAIN ${(config.chain ?? 'TBA').toUpperCase()}`)}
       ${head('THE', 'TOKEN.')}
-      ${lede(`${T} is the meme token of the pride. {{Holding it is what puts you in line for the drops.}}${config.buyUrl ? '' : ' Nothing to buy yet; these buttons wake up when there is.'}`)}
-      ${facts(tokenFacts().slice(1))}
+      ${lede(`${T} is the meme token of the pride. {{A share of ${fees} buys it back.}}${config.buyUrl ? '' : ' Nothing to buy yet; these buttons wake up when there is.'}`)}
+      ${facts([tokenFacts().supply, tokenFacts().burned, tokenFacts().circulating, tokenFacts().chain])}
       <div class="actions" data-in>
         <span class="slot" data-buy="gold"></span>
         <span class="slot" data-ca="named"></span>
@@ -314,7 +352,7 @@ export const SCREENS: ScreenDef[] = [
       </div>
       <div class="safety" data-in role="note" aria-label="Safety notice">
         <span class="safety__label">Stay safe</span>
-        <p>We’ll never DM you, ask for your seed phrase, or ask you to connect a wallet to receive an airdrop. Airdrops are sent automatically. Only trust links on this site.</p>
+        <p>We’ll never DM you, ask for your seed phrase, or ask you to send funds. Buybacks happen on-chain from our public wallet. Only trust links on this site.</p>
       </div>
       <p class="disclaimer-short" data-in>${esc(SHORT_DISCLAIMER)} <button class="disclaimer-short__more" type="button" data-disclaimer-open aria-haspopup="dialog">Read more</button></p>
       <div class="cabox" data-in>
@@ -325,7 +363,7 @@ export const SCREENS: ScreenDef[] = [
         <span class="slot" data-buy="ghost"></span>
         <span class="slot" data-explorer></span>
       </div>
-      ${facts(tokenFacts())}
+      ${facts([tokenFacts().token, tokenFacts().chain, tokenFacts().burned, tokenFacts().circulating])}
       <p class="disclaimer" data-in>${esc(DISCLAIMER)}</p>`,
   },
 ]

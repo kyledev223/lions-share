@@ -1,4 +1,4 @@
-import { shorten } from './airdrop'
+import { B, shorten, sinkName } from './buyback'
 import { config, PLACEHOLDER_ADDRESS } from './config'
 
 let toastTimer = 0
@@ -23,7 +23,8 @@ const soonTag = () => {
  *   data-ca          corner pill: "CA 0x12…abcd COPY"
  *   data-ca="named"  "$ROAR CA COPY" (screen 10)
  *   data-ca="full"   the whole address with a COPY button (screen 12)
- *   data-reserve     the airdrop reserve wallet: "RESERVE 0x12…abcd COPY" (screen 07)
+ *   data-wallet="buyback"  the buyback wallet: "WALLET 0x12…abcd COPY" (screen 07)
+ *   data-wallet="burn"     the burn (or lock) address: "BURN 0x12…abcd COPY" (screen 07)
  */
 function addressControl(host: HTMLElement, address: string | null, kind: string, pre: string, what: string) {
   const btn = document.createElement('button')
@@ -91,7 +92,7 @@ function linkControl(host: HTMLElement, label: string, url: string | null, varia
 }
 
 /**
- * Fills every [data-ca], [data-reserve], [data-buy], [data-explorer] and
+ * Fills every [data-ca], [data-wallet], [data-buy], [data-explorer] and
  * [data-href] slot from config. Anything without a value yet shows greyed out
  * and does nothing.
  */
@@ -100,12 +101,18 @@ export function hydrateToken() {
     const kind = el.dataset.ca || 'pill'
     addressControl(el, config.contractAddress, kind, kind === 'named' ? `${config.ticker} CA` : 'CA', 'Contract address')
   })
-  document
-    .querySelectorAll<HTMLElement>('[data-reserve]')
-    .forEach((el) => addressControl(el, config.airdrop.reserveWallet, 'pill', 'RESERVE', 'Airdrop reserve wallet'))
-  document
-    .querySelectorAll<HTMLElement>('[data-reserve-explorer]')
-    .forEach((el) => linkControl(el, 'View on explorer ↗', config.airdrop.explorerUrl, 'ghost'))
+  const wallets: Record<string, { address: string | null; explorer: string | null; pre: string; what: string }> = {
+    buyback: { address: B.buybackWallet, explorer: B.explorerUrl, pre: 'WALLET', what: 'Buyback wallet' },
+    burn: { address: B.burnAddress, explorer: B.burnExplorerUrl, pre: B.method === 'lock' ? 'LOCK' : 'BURN', what: sinkName() },
+  }
+  document.querySelectorAll<HTMLElement>('[data-wallet]').forEach((el) => {
+    const w = wallets[el.dataset.wallet ?? '']
+    if (w) addressControl(el, w.address, 'pill', w.pre, w.what)
+  })
+  document.querySelectorAll<HTMLElement>('[data-wallet-explorer]').forEach((el) => {
+    const w = wallets[el.dataset.walletExplorer ?? '']
+    if (w) linkControl(el, 'View on explorer ↗', w.explorer, 'ghost')
+  })
   document
     .querySelectorAll<HTMLElement>('[data-buy]')
     .forEach((el) => linkControl(el, `Buy ${config.ticker} ↗`, config.buyUrl, el.dataset.buy || 'primary'))

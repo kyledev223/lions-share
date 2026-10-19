@@ -5,7 +5,7 @@ import { shared } from './gl/points'
 
 const STATUS = [
   [0, 'Gathering the pride…'],
-  [38, 'Counting the holders…'],
+  [38, 'Counting the fees…'],
   [72, 'Measuring out the shares…'],
   [100, 'The share is ready.'],
 ] as const

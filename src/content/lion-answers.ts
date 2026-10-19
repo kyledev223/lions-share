@@ -1,29 +1,34 @@
-import { A, cadenceText, fmtNumber, nextSnapshotText, shorten } from '../airdrop'
+import { B, cadenceText, feeShareText, nextBuybackText, retired, shorten, sinkName } from '../buyback'
 import { config } from '../config'
 
 /**
- * The lion's office hours (screen 09): an airdrop FAQ in his voice. Every
+ * The lion's office hours (screen 09): a buyback FAQ in his voice. Every
  * figure he quotes comes from config.ts; anything not set yet is "TBA". He
  * never gives financial advice, predicts prices or promises anything:
- * questions about price, value or "will it go up" get a playful deflection.
+ * questions about price, value, floors, pumps or "will it go up" get a
+ * playful deflection.
  *
  * Nothing a visitor types is stored or sent anywhere: questions are matched
  * here, in the page, and forgotten.
  */
 
 const T = config.ticker
-const minimum = A.minHolding === null ? 'the minimum (TBA)' : `at least ${fmtNumber(A.minHolding)} ${T}`
-const cap = A.perWalletCap === null ? 'A per-wallet cap (TBA) keeps' : `No wallet takes more than ${A.perWalletCap}% of a round, which keeps`
-const excluded = A.exclusions.length ? A.exclusions.join(', ').toLowerCase() : 'nothing yet'
-const exchangesOut = A.exclusions.some((e) => /exchange/i.test(e))
-const schedule = A.cadence ? `Snapshots are taken ${cadenceText()}.` : 'The snapshot schedule is TBA.'
-const next = A.nextSnapshot ? `Next one: ${nextSnapshotText()}.` : 'Next snapshot: TBA. The countdown on this site wakes up when it’s set.'
+const funding =
+  B.feePercent === null
+    ? `A share of ${B.feeSource ? `the ${B.feeSource}` : 'the fees'} (the exact share is TBA)`
+    : `${feeShareText().charAt(0).toUpperCase()}${feeShareText().slice(1)}`
+const schedule = B.cadence ? `Buybacks happen ${cadenceText()}.` : 'The buyback schedule is TBA.'
+const next = B.nextBuyback ? `Next one: ${nextBuybackText()}.` : 'Next buyback: TBA. The countdown on this site wakes up when it’s set.'
+const sink = sinkName().toLowerCase()
+const burnWhat = 'Burned means sent to an address nobody controls. Those tokens are gone permanently, so the circulating supply shrinks.'
+const lockWhat = 'Locked means held in a public lock, out of circulation, while the lock lasts.'
+const sinkWhat = B.method === 'lock' ? lockWhat : B.method === 'burn' ? burnWhat : `${burnWhat} ${lockWhat}`
 
 /** The general pool: picked at random, no repeats until every one has been used. */
 const GENERAL = [
-  'Ask me about snapshots, rules or claiming. Everything else gets a proverb.',
-  'Hold, get counted, receive. That’s the whole hunt.',
-  'A lion never asks for the biggest slice. He just sits where it lands.',
+  'Ask me about buybacks, burns or the rules. Everything else gets a proverb.',
+  `Fees in, ${T} bought, ${T} ${retired()}. That’s the whole hunt.`,
+  'A lion takes the biggest slice. A good one puts it back.',
   'Patience is just hunting with better posture.',
   'I’ve never been late. Everyone else has been early.',
   'Kings don’t queue. We do, however, wait beautifully.',
@@ -39,75 +44,83 @@ const GENERAL = [
   'Being majestic is ten percent mane and ninety percent not tripping in public.',
   'I keep my claws sharp and my comebacks sharper.',
   'The trick to a good roar is the silence just before it.',
-  'Never trust a gazelle who says “trust me”. Or a stranger who DMs you about an airdrop.',
+  'Never trust a gazelle who says “trust me”. Or a stranger who DMs you about a buyback.',
   'Pull up a rock. There’s room. There’s always room.',
 ]
 
 /** Topics a question can be about, checked in order; the first match answers. */
 const TOPICS: { match: RegExp; answers: string[] }[] = [
   {
-    // Safety first: seed phrases, DMs and anyone offering "help".
-    match: /\b(seed|phrase|private ?key|keys|dms?|messaged?|scam\w*|support|admin\w*|mods?|impost\w*|fake|phish\w*|recover\w*)\b/,
+    // Safety first: seed phrases, DMs, anyone offering "help" or asking for funds.
+    match: /\b(seed|phrase|private ?key|keys|dms?|messaged?|scam\w*|(customer|tech) support|support (team|staff|desk)|admin\w*|mods?|impost\w*|fake|phish\w*|recover\w*|send (you|funds|money|sol|eth)|giveaway)\b/,
     answers: [
-      'We’ll never DM you, never ask for your seed phrase and never ask you to connect a wallet. Anyone who does is a hyena in a borrowed mane.',
-      'Your seed phrase stays with you. Always. Airdrops are sent automatically; nobody needs it, least of all me.',
+      'We’ll never DM you, ask for your seed phrase, or ask you to send funds. Anyone who does is a hyena in a borrowed mane.',
+      'Your seed phrase stays with you. Always. Buybacks happen on-chain from our public wallet; nobody needs anything from you.',
       'Only trust links on this site. The rest of the savanna is full of very convincing hyenas.',
     ],
   },
   {
-    match: /\b(claim\w*|redeem\w*|collect\w*|apply|register\w*|sign ?up|whitelist\w*)\b/,
-    answers: [
-      'Nothing to claim, nothing to sign. Your share is sent straight to your wallet.',
-      'No forms, no claiming. If someone asks you to “claim” a drop, walk away. It arrives on its own.',
-    ],
-  },
-  {
-    match: /\b(connect\w*|sign\w*|approv\w*|permission\w*|metamask|phantom|link (my|your) wallet)\b/,
-    answers: [
-      'Never. You don’t connect a wallet to receive a drop. Anyone who asks is a hyena.',
-      'No connecting, no signing. Drops are sent automatically to holders’ wallets.',
-    ],
-  },
-  {
-    // Money talk gets a deflection, every time. Checked before the airdrop topics so "will the airdrop pump" is still a deflection.
-    match: /\b(prices?|pump\w*|moon\w*|go(es|ing)? up|worth|value|lambo|\d+x|charts?|wen|mcap|market ?cap|ath|dip|profits?|returns?|rich|gains?|invest\w*|predict\w*|sell\w*|dump\w*|financ\w*|money|cash)\b/,
+    // Money talk gets a deflection, every time. Checked before the buyback topics so "will the buyback pump it" is still a deflection.
+    match: /\b(prices?|pump\w*|moon\w*|go(es|ing)? up|number go|worth|value|floors?|lambo|\d+x|charts?|wen|mcap|market ?cap|ath|dip|profits?|returns?|rich|gains?|invest\w*|predict\w*|sell\w*|dump\w*|financ\w*|make money|earn\w*|guarantee\w*|support the|prop\w* up)\b/,
     answers: [
       'I don’t do predictions. I do patience.',
       'Will it go up? Ask a giraffe. They see further than I do.',
       'Charts are for hyenas. Lions watch the horizon and keep quiet.',
-      'Ask the stars about prices. Ask me about snapshots.',
+      'Ask the stars about prices. Ask me about buybacks.',
+      'Buybacks follow the rules. Prices follow nobody. I only answer for the first one.',
       'Nothing said on this ledge is advice. Especially the bits that sound like it.',
     ],
   },
   {
-    match: /\b(exclu\w*|exchanges?|cex\w*|lp|liquidity|pools?|burn\w*|team|devs?|binance|coinbase|kraken|okx|bybit)\b/,
-    answers: [`Never counted: ${excluded}. Hold in a wallet you control.`],
-  },
-  {
-    match: /\b(qualif\w*|eligib\w*|minimum|min|requir\w*|need to hold|how much do i need|how do i get|enough)\b/,
+    match: /\b(do anything|need to do|have to do|claim\w*|redeem\w*|collect\w*|apply|register\w*|sign ?up|whitelist\w*|stak\w*|connect\w*|approv\w*|permission\w*|metamask|phantom|link (my|your) wallet)\b/,
     answers: [
-      `Hold ${minimum} in a wallet you control when the snapshot is taken. That’s the whole test.`,
-      `Be holding at the snapshot, in your own wallet.${exchangesOut ? ' Exchange balances don’t count.' : ''}`,
+      'Nothing. No forms, no signing, no connecting. The buybacks happen on their own.',
+      'Holders don’t need to do a thing. If someone asks you to connect, sign or send something “for the buyback”, walk away.',
     ],
   },
   {
-    match: /\b(snapshots?|when|schedule\w*|next|how often|cadence|date|countdown|monthly|weekly)\b/,
-    answers: [`${schedule} ${next}`, `A snapshot is a moment-in-time record of every holder. ${schedule}`],
-  },
-  {
-    match: /\b(how much|caps?|capped|whales?|proportion\w*|small|tiny|shrimp|fair\w*|split\w*|big holders?)\b/,
+    match: /\b(fees?|fund\w*|money|cash|budget|treasury|source|pays?|paid|where does|come from|how much|percent\w*|share)\b/,
     answers: [
-      `Your share is proportional to what you hold. Small holders included. ${cap} the whales from taking it all.`,
-      `Hold more, receive more; hold less, still receive your part. ${cap} it fair.`,
+      `${funding} goes to the lion’s wallet and is spent buying ${T} on the open market.`,
+      `The money comes from fees, not from holders. ${funding} is used for buybacks.`,
     ],
   },
   {
-    match: /\b(verif\w*|proof|prove|check\w*|trust\w*|transparen\w*|explorer|tx|txs|transactions?|reserve|on ?chain|audit\w*|list)\b/,
+    match: /\b(verif\w*|proof|prove|check\w*|trust\w*|transparen\w*|explorer|tx|txs|transactions?|wallets?|burn address|lock address|on ?chain|audit\w*|publish\w*|history|record)\b/,
     answers: [
-      'Every round’s snapshot, holder list and transactions are published. Check them on the explorer yourself.',
-      A.reserveWallet
-        ? `Every drop leaves the reserve wallet, ${shorten(A.reserveWallet)}. Watch it on the explorer.`
-        : 'Every drop leaves one public reserve wallet. Its address is TBA; it goes up on this site’s Nothing Hidden screen.',
+      'Every buyback transaction is published, with the date, what was spent and what was bought. Check them on the explorer yourself.',
+      B.buybackWallet
+        ? `Every buyback is made from one public wallet, ${shorten(B.buybackWallet)}. Watch it on the explorer.`
+        : 'Every buyback is made from one public wallet. Its address is TBA; it goes up on this site’s Nothing Hidden screen.',
+      B.burnAddress
+        ? `Bought ${T} goes to the ${sink}, ${shorten(B.burnAddress)}. It’s on the Nothing Hidden screen with an explorer link.`
+        : `The ${sink} is TBA. It goes up on the Nothing Hidden screen, with an explorer link.`,
+    ],
+  },
+  {
+    match: /\b(burn\w*|lock\w*|destroy\w*|dead|gone|incinerat\w*|supply|circulat\w*|scarce)\b/,
+    answers: [
+      B.method === null ? `Bought ${T} is burned or locked; which one is in the published rules (TBA). ${sinkWhat}` : sinkWhat,
+      `Every buyback takes ${T} out of circulation. Fewer tokens, same pride.`,
+    ],
+  },
+  {
+    match: /\b(when|schedule\w*|next|how often|cadence|date|countdown|monthly|weekly|daily|time)\b/,
+    answers: [`${schedule} ${next}`, `Buybacks follow fixed, pre-announced rules. ${schedule}`],
+  },
+  {
+    match: /\b(rules?|change\w*|stop\w*|end|forever|promise\w*|who decides)\b/,
+    answers: [
+      'The rules are published in advance on this site. Any change is announced before it applies.',
+      'Same rules every time, published first. If they change, you hear it here before it happens.',
+    ],
+  },
+  {
+    // "buyback" before "buy", so it isn't read as a question about buying.
+    match: /\b(buy ?backs?|bought|how (does|do) (it|this|they) work|explain|what is this)\b/,
+    answers: [
+      `A buyback: ${funding.charAt(0).toLowerCase()}${funding.slice(1)} is used to buy ${T} on the open market. Then it’s ${retired()}, and every one is published.`,
+      `The lion takes his share of the fees and puts it back into the pride: ${T} bought on the open market, then ${retired()}.`,
     ],
   },
   {
@@ -127,9 +140,8 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
     // "$roar" arrives here as "sroar": normalise() reads $ as s.
     match: /\b(airdrop\w*|drops?|rewards?|sroar|tokens?|coins?|holders?|holding|hold)\b/,
     answers: [
-      `An airdrop is ${A.rewardToken} sent straight to holders’ wallets. Be holding at the snapshot and a share comes to you.`,
-      'The pride’s reward for staying: a share sent to every eligible holder after a snapshot. Discretionary, like all good gifts, and it may change or end.',
-      `${T} is the meme token of the pride. Hold it, get counted at the snapshot, receive your share.`,
+      `${T} is the meme token of the pride. Nothing gets sent to wallets: a share of the fees goes into buybacks instead.`,
+      `Holders don’t need to do anything. The lion buys ${T} back and it’s ${retired()}, all on the record.`,
     ],
   },
   {
@@ -261,18 +273,17 @@ export function answerFor(question: string) {
 
 /** What rises from the water on its own: the questions holders ask most, short enough for a bubble. */
 export const AMBIENT_QUESTIONS = [
-  'WHAT’S AN AIRDROP?',
-  'HOW DO I QUALIFY?',
-  'WHEN’S THE SNAPSHOT?',
-  'DO I NEED TO CLAIM?',
-  'CONNECT MY WALLET?',
-  'WHAT’S EXCLUDED?',
-  'WHERE CAN I VERIFY?',
-  'IS THERE A MINIMUM?',
-  'DO SMALL HOLDERS GET ANY?',
-  'WHAT ABOUT WHALES?',
-  'DO EXCHANGES COUNT?',
-  'WHO SENDS THE DROPS?',
+  'WHAT’S A BUYBACK?',
+  'WHERE DO THE FEES GO?',
+  'WHEN’S THE NEXT BUYBACK?',
+  'WHAT DOES BURNING MEAN?',
+  'BURNED OR LOCKED?',
+  'DO I NEED TO DO ANYTHING?',
+  'HOW DO I VERIFY?',
+  'WHERE’S THE BURN ADDRESS?',
+  'WHO MAKES THE BUYBACKS?',
+  'CAN THE RULES CHANGE?',
+  'HOW OFTEN?',
   'WHAT CHAIN?',
   'WILL IT GO UP?',
   'WHY THE SUIT?',

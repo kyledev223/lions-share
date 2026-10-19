@@ -690,7 +690,7 @@ function theHunt(): Stage {
   floorGlow(scene, V(0, 0, 0), 0.8, 1.1)
   motes(scene, 403, V(-8, 0, -8), V(8, 5, 3), 1600, goldMix)
   return {
-    id: 'snapshots',
+    id: 'schedule',
     transition: { claw: 'light', wind: [0.6, 0, 0], swing: -10 }, // streaming out behind his stride
     scene,
     camera: { pos: V(-0.9, 1.2, 4.6), target: V(-0.9, 1.05, 0), fov: 38 },
@@ -847,7 +847,7 @@ function forYou(emblem: Stamp): Stage {
     giftSpin.rotation.y = reduced ? 0 : Math.sin(time * 0.55) * 0.6
   }
   return {
-    id: 'holders',
+    id: 'supply',
     transition: { claw: 'light', wind: [0, 0, 0.6] }, // toward you
     scene,
     camera: { pos: CAM, target: V(CAM.x, 1.42, 0), fov: 40 },
@@ -1041,7 +1041,7 @@ function cheers(): Stage {
   const GLASS_TURN = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), V(-1, 0, 0))
   const held = prop(scene, glass, (m, g) => onHand(m, 'Left', g, GLASS_AT, GLASS_TURN))
   return {
-    id: 'drops',
+    id: 'buybacks',
     transition: { claw: 'light', wind: [0, 0.35, 0.1], swing: -6, wash: '#4a3410' }, // rising like the fizz
     scene,
     camera: { pos: V(-0.55, 1.62, 1.75), target: V(-0.55, 1.48, 0), fov: 42 },

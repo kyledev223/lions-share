@@ -4,7 +4,7 @@ import '@fontsource/jetbrains-mono/500.css'
 import './style.css'
 
 import gsap from 'gsap'
-import { initCountdown } from './airdrop'
+import { initCountdown } from './buyback'
 import { createAsk } from './ask'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'

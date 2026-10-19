@@ -1,7 +1,7 @@
 import { ambientAsker, answerFor, cleanQuestion, isBlocked } from './content/lion-answers'
 
 /**
- * Screen 09's live Q&A, an airdrop FAQ in the lion's voice: the card on the
+ * Screen 09's live Q&A, a buyback FAQ in the lion's voice: the card on the
  * right and the visitor's question box.
  *
  * Questions rise from the watering hole as bubbles (gl/watering-hole.ts);

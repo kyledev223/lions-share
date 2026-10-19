@@ -1,5 +1,5 @@
 /**
- * Contract address, links, token facts and the airdrop rules in one place.
+ * Contract address, links, token facts and the buyback rules in one place.
  *
  * While `contractAddress`, `buyUrl` or `explorerUrl` is `null` (or a link is
  * `'#'`), every control that depends on it renders greyed out with a "Coming
@@ -8,42 +8,46 @@
  * the buttons become real links.
  *
  * Every number the site shows comes from here. Anything left `null` shows
- * "TBA" (or "Coming soon" on a control), never an invented figure.
+ * "TBA" (or "Coming soon" on a control), never an invented figure. Total
+ * burned and circulating supply are worked out from `supply` and
+ * `buyback.history` (see buyback.ts), never typed in.
  */
-export interface AirdropRound {
-  /** ISO date the drop was sent, e.g. "2026-11-01". */
+export interface BuybackRound {
+  /** ISO date the buyback was made, e.g. "2026-11-01". */
   date: string
-  /** Round number, 1 for the first drop. */
+  /** Round number, 1 for the first buyback. */
   round: number
-  /** Unit: whole `rewardToken` tokens sent in that round. */
-  totalSent: number
-  /** How many wallets received a share. */
-  wallets: number
+  /** What was spent on the buyback, e.g. `{ amount: 12.5, currency: 'SOL' }`. */
+  spent: { amount: number; currency: string }
+  /** Unit: whole $ROAR tokens bought on the open market in that round. */
+  tokensBought: number
+  /** Unit: whole $ROAR tokens burned in that round (0 if they were locked instead). */
+  tokensBurned: number
   /** Explorer link to the round's transactions. `null` = shown greyed out. */
   txUrl: string | null
 }
 
-export interface AirdropConfig {
-  /** Unit: percent of total supply set aside for airdrops (10 means 10%). `null` = TBA. */
-  allocationPercent: number | null
-  /** What the drops are paid in. */
-  rewardToken: string
-  /** Unit: a phrase that completes "Snapshots are taken…", e.g. "monthly" or "every two weeks". `null` = TBA. */
+export interface BuybackConfig {
+  /** Unit: a phrase naming where the money comes from, e.g. "creator trading fees". `null` = TBA. */
+  feeSource: string | null
+  /** Unit: percent of `feeSource` used for buybacks (50 means 50%). `null` = TBA. */
+  feePercent: number | null
+  /** Unit: a phrase that completes "Buybacks happen…", e.g. "every Monday" or "weekly". `null` = TBA. */
   cadence: string | null
-  /** Unit: an ISO 8601 date-time, shown in UTC, e.g. "2026-11-01T16:00:00Z". `null` = "Next snapshot: TBA". */
-  nextSnapshot: string | null
-  /** Unit: whole $ROAR tokens a wallet must hold at the snapshot to count (100000 means 100,000 $ROAR). `null` = TBA. */
-  minHolding: number | null
-  /** Unit: percent of a single round, the most one wallet can receive from it (1 means 1% of each round). `null` = TBA. */
-  perWalletCap: number | null
-  /** The public wallet every drop is sent from. `null` = disabled placeholder. */
-  reserveWallet: string | null
-  /** Explorer page for the reserve wallet. `null` = disabled placeholder. */
+  /** Unit: an ISO 8601 date-time, shown in UTC, e.g. "2026-11-01T16:00:00Z". `null` = "Next buyback: TBA". */
+  nextBuyback: string | null
+  /** What happens to the bought $ROAR: sent to the burn address, or locked. `null` = TBA. */
+  method: 'burn' | 'lock' | null
+  /** The public wallet every buyback is made from. `null` = disabled placeholder. */
+  buybackWallet: string | null
+  /** Where bought $ROAR is sent: the burn address (or the lock, if `method` is "lock"). `null` = disabled placeholder. */
+  burnAddress: string | null
+  /** Explorer page for the buyback wallet. `null` = disabled placeholder. */
   explorerUrl: string | null
-  /** Wallets that never count toward a snapshot. */
-  exclusions: string[]
-  /** Every round sent so far, oldest first. Empty = "The first drop is coming." */
-  history: AirdropRound[]
+  /** Explorer page for the burn address. `null` = disabled placeholder. */
+  burnExplorerUrl: string | null
+  /** Every buyback made so far, oldest first. Empty = "The first buyback is coming." */
+  history: BuybackRound[]
 }
 
 export interface SiteConfig {
@@ -58,11 +62,11 @@ export interface SiteConfig {
   /** "Join the pride" and "Follow the roar" (also the X button in the corner). `'#'` = disabled placeholder. */
   communityUrl: string
   followUrl: string
-  /** Total supply in whole tokens. `null` = TBA. */
+  /** Unit: whole tokens at launch, before any burn. `null` = TBA. */
   supply: number | null
   /** The chain $ROAR lives on, e.g. "Solana". `null` = TBA. */
   chain: string | null
-  airdrop: AirdropConfig
+  buyback: BuybackConfig
 }
 
 export const config: SiteConfig = {
@@ -75,16 +79,16 @@ export const config: SiteConfig = {
   followUrl: '#',
   supply: 1_000_000_000,
   chain: null,
-  airdrop: {
-    allocationPercent: null,
-    rewardToken: '$ROAR',
+  buyback: {
+    feeSource: null,
+    feePercent: null,
     cadence: null,
-    nextSnapshot: null,
-    minHolding: null,
-    perWalletCap: null,
-    reserveWallet: null,
+    nextBuyback: null,
+    method: null,
+    buybackWallet: null,
+    burnAddress: null,
     explorerUrl: null,
-    exclusions: ['The liquidity pool', 'Exchange wallets', 'The burn address', 'Team wallets'],
+    burnExplorerUrl: null,
     history: [],
   },
 }
@@ -97,7 +101,7 @@ export const PLACEHOLDER_ADDRESS = '0x0000…0000'
  * index.html's meta descriptions carry a shortened version: keep them in sync.
  */
 export const DISCLAIMER =
-  '$ROAR is a meme token. It has no intrinsic value and comes with no expectation of financial return. Airdrops are discretionary community rewards and may change or stop at any time. Crypto is volatile, and you can lose everything you put in. Nothing on this site is financial advice. Check the laws where you live before taking part. Lion’s Share is an independent community project, not affiliated with or endorsed by any exchange, launchpad or company.'
+  '$ROAR is a meme token. It has no intrinsic value and comes with no expectation of financial return. Buybacks are made under published rules that may change with notice, and they do not guarantee or support any price. Crypto is volatile, and you can lose everything you put in. Nothing on this site is financial advice. Check the laws where you live before taking part. Lion’s Share is an independent community project, not affiliated with or endorsed by any exchange, launchpad or company.'
 
 /** The one-line version on phones (screen 12), with "Read more" opening the full text. */
-export const SHORT_DISCLAIMER = 'Meme token. No expected returns. Not financial advice.'
+export const SHORT_DISCLAIMER = 'Meme token. No expectation of financial return. Not financial advice.'

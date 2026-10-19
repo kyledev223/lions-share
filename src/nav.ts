@@ -3,7 +3,7 @@ import { music } from './audio'
 import { fx } from './fx-config'
 import type { Engine } from './gl/engine'
 import { scramble } from './scramble'
-import type { ScreenView } from './screens'
+import { HASH_ALIASES, type ScreenView } from './screens'
 
 /** Wheel distance (px) that counts as one deliberate flick. */
 const WHEEL_STEP = 50
@@ -55,7 +55,11 @@ export function createNav({ engine, views, reduced, onChange }: NavOptions) {
 
   let index = 0
   let locked = true
-  const indexOfHash = () => views.findIndex((v) => v.def.id === location.hash.slice(1))
+  /** An old hash (#drops, #snapshots, #holders) finds the screen that replaced it; reflect() then rewrites the URL. */
+  const indexOfHash = () => {
+    const id = location.hash.slice(1)
+    return views.findIndex((v) => v.def.id === (HASH_ALIASES[id] ?? id))
+  }
   /** Enter always lands on screen 01, so a #hash left over from a refresh or a pasted link is dropped (the query, e.g. ?debug, stays). */
   const dropHash = () => location.hash && history.replaceState(null, '', location.pathname + location.search)
 
