@@ -1041,7 +1041,7 @@ function cheers(): Stage {
   const GLASS_TURN = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), V(-1, 0, 0))
   const held = prop(scene, glass, (m, g) => onHand(m, 'Left', g, GLASS_AT, GLASS_TURN))
   return {
-    id: 'buybacks',
+    id: 'relax',
     transition: { claw: 'light', wind: [0, 0.35, 0.1], swing: -6, wash: '#4a3410' }, // rising like the fizz
     scene,
     camera: { pos: V(-0.55, 1.62, 1.75), target: V(-0.55, 1.48, 0), fov: 42 },

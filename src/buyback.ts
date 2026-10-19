@@ -71,14 +71,6 @@ export const retired = () => (B.method === 'lock' ? 'locked' : B.method === 'bur
 /** What to call `burnAddress`. */
 export const sinkName = () => (B.method === 'lock' ? 'Lock address' : 'Burn address')
 
-/** One round's tokens, for the history list: "4,200,000 $ROAR bought and burned". */
-export function roundTokens(r: (typeof B.history)[number]) {
-  const T = config.ticker
-  if (r.tokensBurned === r.tokensBought) return `${fmtNumber(r.tokensBought)} ${T} bought and burned`
-  if (r.tokensBurned === 0) return `${fmtNumber(r.tokensBought)} ${T} bought${B.method === 'lock' ? ' and locked' : ''}`
-  return `${fmtNumber(r.tokensBought)} bought · ${fmtNumber(r.tokensBurned)} burned`
-}
-
 /** The token facts, as label/value rows (screens 10 and 12). */
 export const tokenFacts = () => ({
   token: { label: 'Token', value: `${config.name} · ${config.ticker}` },

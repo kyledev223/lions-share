@@ -125,7 +125,7 @@ public/assets/lion/     lion.glb, written by npm run mascot
 | 05 | `#rules` | The rules (fee source, share, schedule, burn or lock) | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
 | 06 | `#supply` | Fewer tokens, same pride | idle with a held reach: palm up toward the viewer, offering a small glowing lion crest; head turned to camera, framed mid-thigh up | a tunnel of rings, the brightest ring kept round his head as a halo |
 | 07 | `#proof` | Nothing hidden (buyback wallet and burn address) | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
-| 08 | `#buybacks` | Buybacks so far (totals and history) | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
+| 08 | `#relax` | Sit back (holders have nothing to claim, sign or send) | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
 | 09 | `#ask` | Ask the lion: buyback FAQ | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
 | 10 | `#token` | The token | idle, held still with the coin standing on his open right palm, held up at shoulder height; looks at it, now and then at you | drifting gold coins, the emblem (up and to the right, so the coin reads against dark space) |
 | 11 | `#memes` | Spread the roar | idle | the meme ring around him, gold dust on the floor |
@@ -201,9 +201,9 @@ buyback: {
 
 ```
 
-While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 07 (the buyback wallet and burn address), 10, 11 (the meme link) and 12. Any buyback figure left `null` reads "TBA"; an empty `history` shows "The first buyback is coming."
+While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 07 (the buyback wallet and burn address), 10, 11 (the meme link) and 12. Any buyback figure left `null` reads "TBA".
 
-**Totals are never typed in.** Burned so far is the sum of `history[].tokensBurned`; circulating supply is `supply` minus that. They show on screens 08, 10 and 12, so they change only when a buyback is recorded.
+**Totals are never typed in.** Burned so far is the sum of `history[].tokensBurned`; circulating supply is `supply` minus that. They show on screens 10 and 12, so they change only when a buyback is recorded.
 
 While `method` is `null` the copy says "burned or locked"; set it and every screen picks one. The meta descriptions in `index.html` and the share image say "burns it": if you choose `'lock'`, update them too.
 
@@ -225,14 +225,14 @@ While `method` is `null` the copy says "burned or locked"; set it and every scre
 
 ## Before each buyback
 
-The site promises three things, so every buyback has to keep them: buybacks follow the rules on screen 05, published in advance; every buyback transaction is published; and screen 08 lists every buyback. Work through this in order:
+The site promises two things, so every buyback has to keep them: buybacks follow the rules on screen 05, published in advance, and every buyback transaction is published. Work through this in order:
 
 - [ ] **Check the rules are current.** If `feeSource`, `feePercent`, `cadence` or `method` is changing, announce it and deploy the change to `src/config.ts` before the buyback it applies to, never after.
 - [ ] **Confirm the funds in the wallet.** The buyback wallet (`buyback.buybackWallet`) should hold exactly the share of fees the rules set aside since the last buyback. Check it on the explorer.
 - [ ] **Execute per the rules.** Buy $ROAR on the open market from the buyback wallet, at the scheduled time, spending what the rules say.
 - [ ] **Burn or lock.** Send the bought $ROAR to the burn address (or the lock, if `method` is `'lock'`), `buyback.burnAddress`.
 - [ ] **Record it.** Add `{ date, round, spent: { amount, currency }, tokensBought, tokensBurned, txUrl }` to `buyback.history`, with the explorer link to the buy and burn transactions. Total burned and circulating supply update from it on their own.
-- [ ] **Check the next date.** With `intervalDays` set, the site moves on to the next buyback by itself. Only touch `nextBuyback` if the schedule changes (announce it first). Deploy, then check screens 04, 08 and 10.
+- [ ] **Check the next date.** With `intervalDays` set, the site moves on to the next buyback by itself. Only touch `nextBuyback` if the schedule changes (announce it first). Deploy, then check screens 04, 10 and 12.
 
 ## Test on a phone
 

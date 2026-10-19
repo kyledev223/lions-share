@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { B, cadenceText, feeShareText, fmtDate, fmtNumber, methodText, nextBuybackAt, nextBuybackText, retired, roundTokens, sinkName, tokenFacts } from './buyback'
+import { B, cadenceText, feeShareText, methodText, nextBuybackAt, nextBuybackText, retired, sinkName, tokenFacts } from './buyback'
 import { MAX_QUESTION } from './ask'
 import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
@@ -84,27 +84,6 @@ const countdown = () => {
   </div>`
 }
 
-/** Screen 08: every buyback so far, newest first. */
-const ROUNDS_SHOWN = 6
-const history = () => {
-  const rounds = [...B.history].sort((a, b) => b.round - a.round)
-  const row = (r: (typeof rounds)[number]) => `
-    <li>
-      <span>${esc(fmtDate(r.date))}</span>
-      <span>Round ${r.round}</span>
-      <span>${esc(roundTokens(r))}</span>
-      <span>${esc(`${fmtNumber(r.spent.amount)} ${r.spent.currency}`)} spent</span>
-      ${
-        r.txUrl
-          ? `<a class="history__tx" href="${esc(r.txUrl)}" target="_blank" rel="noopener noreferrer">Tx ↗</a>`
-          : `<span class="history__tx is-disabled" title="Coming soon">Tx</span>`
-      }
-    </li>`
-  return `
-    <ol class="history" data-in aria-label="Buybacks so far">${rounds.slice(0, ROUNDS_SHOWN).map(row).join('')}</ol>
-    ${rounds.length > ROUNDS_SHOWN ? note(`Showing the latest ${ROUNDS_SHOWN} of ${rounds.length} buybacks.`) : ''}`
-}
-
 /** Screen 07: one public address with its explorer link (token.ts fills both slots from config). */
 const walletBox = (label: string, which: 'buyback' | 'burn') => `
   <div class="cabox">
@@ -166,7 +145,8 @@ const supplyCopy =
 export const HASH_ALIASES: Record<string, string> = {
   snapshots: 'schedule',
   holders: 'supply',
-  drops: 'buybacks',
+  drops: 'relax',
+  buybacks: 'relax',
 }
 
 export const SCREENS: ScreenDef[] = [
@@ -277,18 +257,21 @@ export const SCREENS: ScreenDef[] = [
     ),
   },
   {
-    id: 'buybacks',
-    name: 'Buybacks so far',
-    sub: 'Every buyback, on the record.',
+    id: 'relax',
+    name: 'Sit back',
+    sub: 'Nothing to claim, sign or send.',
     side: 'left',
     html: `
-      ${eyebrow('CHEERS · THE RECORD')}
-      ${head('BUYBACKS', 'SO FAR.')}
-      ${
-        B.history.length
-          ? `${lede(`Raise something golden: ${B.history.length} ${B.history.length === 1 ? 'buyback' : 'buybacks'} made, {{every one on the record}}.`)}${facts([tokenFacts().burned, tokenFacts().circulating])}${history()}`
-          : `${lede('The first buyback is coming. {{It goes on the record the moment it lands.}}')}${note(`Every buyback will be listed here: the date, what was spent, the ${T} bought and ${retired()}, and the transaction.`)}`
-      }`,
+      ${eyebrow('CHEERS · FOR HOLDERS')}
+      ${head('SIT', 'BACK.')}
+      ${lede('Buybacks happen on their own. {{Holders don’t have to do a thing.}}')}
+      ${body(`The lion’s wallet does the buying with ${fees}, never with yours. Nothing to register for, nothing to stake, nothing to connect. If anyone asks you to do any of it, it isn’t us.`)}
+      ${facts([
+        { label: 'To claim', value: 'Nothing' },
+        { label: 'To sign', value: 'Nothing' },
+        { label: 'To send', value: 'Nothing' },
+      ])}
+      ${note('THE LION HUNTS. THE PRIDE RAISES A GLASS.')}`,
   },
   {
     id: 'ask',

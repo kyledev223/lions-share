@@ -997,40 +997,6 @@ html.is-jacked .screen.is-active {
   font-weight: 450;
 }
 
-/* ---- 08: the buybacks so far ---- */
-.history {
-  display: grid;
-  width: min(100%, 40rem);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font: 500 0.72rem/1.4 var(--f-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.history li {
-  display: grid;
-  grid-template-columns: 7.5rem 5.5rem 1fr 8rem auto;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 0.625rem 0;
-  border-top: 1px solid var(--line);
-}
-.history li > span:first-child {
-  color: var(--gold-hi);
-}
-.history__tx {
-  justify-self: start;
-  padding: 0.25rem 0.625rem;
-  border: 1px solid var(--line);
-  border-radius: 62.4375rem;
-  color: var(--ink);
-  text-decoration: none;
-}
-a.history__tx:hover {
-  border-color: var(--light);
-}
-
 /* ---- post cards: official announcements, no handles, no counts ---- */
 .post {
   display: grid;
@@ -1518,13 +1484,6 @@ html.is-dragging .cursor__ring::before {
   }
   .screen--proof .post__text {
     display: none;
-  }
-  .history li {
-    grid-template-columns: 1fr auto;
-    gap: 2px 10px;
-  }
-  .history li > span:nth-child(n + 3) {
-    color: var(--ink-dim);
   }
   /* Long screens lose their lede on phones; the card and buttons carry them. */
   .screen--schedule .lede,
