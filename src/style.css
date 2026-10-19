@@ -1468,25 +1468,8 @@ html.is-dragging .cursor__ring::before {
   .disclaimer-short {
     display: block;
   }
-  /* 07's wallet card is the point of the screen: on phones it sits under the copy instead of vanishing. */
-  .screen--proof {
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: stretch;
-    gap: 12px;
-  }
-  .screen--proof .screen__aside {
-    display: block;
-    position: static;
-    width: auto;
-    transform: none;
-  }
-  .screen--proof .post__text {
-    display: none;
-  }
   /* Long screens lose their lede on phones; the card and buttons carry them. */
   .screen--every-buy .lede,
-  .screen--proof .lede,
   .screen--join .lede {
     display: none;
   }

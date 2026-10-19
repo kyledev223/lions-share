@@ -904,7 +904,7 @@ function theSummit(emblem: Stamp): Stage {
   cloud(scene, 703, (c) => floorGrid(c, -7, 7, -9, 2, 7, 10, 18, 0.3), { scatter: 4, depthFade: [9, 13] })
   motes(scene, 704, V(-7, 0, -8), V(7, 8, 3), 1500, redMix)
   return {
-    id: 'proof',
+    id: 'lion',
     transition: { claw: 'full', wind: [0, 0.6, 0], swing: 18, wash: '#5a0a12' }, // up the red beam
     scene,
     camera: { pos: V(0.15, 2.1, 7.6), target: V(0.15, 2.4, 0), fov: 44 },

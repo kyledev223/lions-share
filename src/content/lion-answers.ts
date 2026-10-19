@@ -1,4 +1,4 @@
-import { B, cadenceText, feeShareText, retired, shorten, sinkName } from '../buyback'
+import { B, cadenceText, feeShareText, retired } from '../buyback'
 import { config } from '../config'
 
 /**
@@ -18,7 +18,6 @@ const funding =
     ? `A share of ${B.feeSource ? `the ${B.feeSource}` : 'the fees'} (the exact share is TBA)`
     : `${feeShareText().charAt(0).toUpperCase()}${feeShareText().slice(1)}`
 const schedule = B.cadence ? `Buybacks happen ${cadenceText()}.` : 'When buybacks happen is TBA.'
-const sink = sinkName().toLowerCase()
 const burnWhat = 'Burned means sent to an address nobody controls. Those tokens are gone permanently, so the circulating supply shrinks.'
 const lockWhat = 'Locked means held in a public lock, out of circulation, while the lock lasts.'
 const sinkWhat = B.method === 'lock' ? lockWhat : B.method === 'burn' ? burnWhat : `${burnWhat} ${lockWhat}`
@@ -54,7 +53,7 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
     match: /\b(seed|phrase|private ?key|keys|dms?|messaged?|scam\w*|(customer|tech) support|support (team|staff|desk)|admin\w*|mods?|impost\w*|fake|phish\w*|recover\w*|send (you|funds|money|sol|eth)|giveaway)\b/,
     answers: [
       'We’ll never DM you, ask for your seed phrase, or ask you to send funds. Anyone who does is a hyena in a borrowed mane.',
-      'Your seed phrase stays with you. Always. Buybacks happen on-chain from our public wallet; nobody needs anything from you.',
+      'Your seed phrase stays with you. Always. Buybacks happen on-chain, on their own; nobody needs anything from you.',
       'Only trust links on this site. The rest of the savanna is full of very convincing hyenas.',
     ],
   },
@@ -87,13 +86,8 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
   {
     match: /\b(verif\w*|proof|prove|check\w*|trust\w*|transparen\w*|explorer|tx|txs|transactions?|wallets?|burn address|lock address|on ?chain|audit\w*|publish\w*|history|record)\b/,
     answers: [
-      'Every buyback is an on-chain transaction from one public wallet: what was spent, what was bought, where it went. Check them on the explorer yourself.',
-      B.buybackWallet
-        ? `Every buyback is made from one public wallet, ${shorten(B.buybackWallet)}. Watch it on the explorer.`
-        : 'Every buyback is made from one public wallet. Its address goes up on this site’s Nothing Hidden screen before trading opens.',
-      B.burnAddress
-        ? `Bought ${T} goes to the ${sink}, ${shorten(B.burnAddress)}. It’s on the Nothing Hidden screen with an explorer link.`
-        : `The ${sink} is TBA. It goes up on the Nothing Hidden screen, with an explorer link.`,
+      'Every buyback is an on-chain transaction: what was spent, what was bought, where it went. The chain keeps the receipts.',
+      `Nothing happens off the books. Every time someone buys, the buyback lands on-chain and the ${T} is ${retired()}.`,
     ],
   },
   {

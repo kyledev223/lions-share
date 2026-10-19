@@ -2,7 +2,7 @@
 
 *Hold $ROAR. The lion buys back.*
 
-A twelve-screen, full-viewport site that explains the $ROAR buybacks: every time someone buys, 20% of creator trading fees is automatically used to buy $ROAR on the open market, and the bought $ROAR is burned, under rules published in advance. Every figure on the site (fee source and share, when buybacks happen, burn or lock, the buyback wallet and burn address, burn tallies) comes from `src/config.ts`; total burned and circulating supply are worked out from it; anything not set yet reads "TBA". There are no made-up people, quotes or engagement counts, and no claims about price.
+A twelve-screen, full-viewport site that explains the $ROAR buybacks: every time someone buys, 20% of creator trading fees is automatically used to buy $ROAR on the open market, and the bought $ROAR is burned, under rules published in advance. Every figure on the site (fee source and share, when buybacks happen, burn or lock, burn tallies) comes from `src/config.ts`; total burned and circulating supply are worked out from it; anything not set yet reads "TBA". There are no made-up people, quotes or engagement counts, and no claims about price.
 
 Every environment is built from glowing points: outlines of rooms, floors, props, charts, text and the emblem, mostly white and red with gold accents, under soft bloom, fine film grain and a little colour fringing toward the edges. The mascot is a lion in a suit, shown as a hologram, with a different animation on each screen. The site opens on a star field around a glass orb of points with the lion's head inside. Built with Vite, vanilla TypeScript, Three.js and GSAP. The music is generated in the browser and the fonts are bundled.
 
@@ -124,7 +124,7 @@ public/assets/lion/     lion.glb, written by npm run mascot
 | 04 | `#every-buy` | Every buy (no schedule: the next buyback is the next buy) | walking, side view | a savanna horizon drawn in candlesticks, an acacia, a low striped sun; the floor scrolls under him |
 | 05 | `#rules` | The rules (share of fees, when, burn or lock) | idle, close up, hands resting on a podium (emblem on its face) | drifting strips of "$ROAR" and "THE PRIDE" |
 | 06 | `#supply` | Fewer tokens, same pride | idle with a held reach: palm up toward the viewer, offering a small glowing lion crest; head turned to camera, framed mid-thigh up | a tunnel of rings, the brightest ring kept round his head as a halo |
-| 07 | `#proof` | Nothing hidden (buyback wallet and burn address) | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
+| 07 | `#lion` | Meet the lion (the suit, the naps, the day job) | looking-up, small, from behind | a red beam from above, the emblem huge and tilted, ridgelines below |
 | 08 | `#relax` | Sit back (holders have nothing to claim, sign or send) | toast (holding, no sip), close up, with a coupe of gold fizz | fireworks in gold and red |
 | 09 | `#ask` | Ask the lion: buyback FAQ | typing on a red-lit phone, standing on a rock ledge | a dark pool below him with ripples, a red edge, low mist and his wobbling reflection; question bubbles rise from it, and some reach him |
 | 10 | `#token` | The token | idle, held still with the coin standing on his open right palm, held up at shoulder height; looks at it, now and then at you | drifting gold coins, the emblem (up and to the right, so the coin reads against dark space) |
@@ -133,7 +133,7 @@ public/assets/lion/     lion.glb, written by npm run mascot
 
 The hologram is the same on the lion and the placeholder: faint bands drifting upward, a thin red rim, legs fading into the floor glow, a flicker every few seconds; he scans in from the top on arrival and dissolves on the way out.
 
-Copy for all of them is in `src/screens.ts`; wrap a phrase in `{{double braces}}` to highlight it in red. The cards on 04 and 07 are official Lion's Share announcements: no handles, no counts.
+Copy for all of them is in `src/screens.ts`; wrap a phrase in `{{double braces}}` to highlight it in red. The card on 04 is an official Lion's Share announcement: no handles, no counts.
 
 ### 09, the Watering Hole
 
@@ -151,7 +151,7 @@ He stands on a rock ledge above a dark pool of points (`src/gl/watering-hole.ts`
 - **Transitions.** The outgoing points scatter and the mascot dissolves, with a short glitch and colour burst; the next screen assembles and he scans back in.
 - **Keys.** Arrow down/up, Page Down/Up, Space / Shift+Space step one screen; Home and End go to the ends.
 - **Rail.** Twelve ticks on the right edge; hover for a name, click to jump. A slim strip on phones.
-- **Links.** Every screen has a hash (`…/#every-buy`), and Back/Forward move between screens. Enter always starts on 01 The Throne; a hash in the URL at load is dropped. Old hashes (`#snapshots`, `#holders`, `#drops` from the airdrop version, `#schedule` and `#buybacks` from the two-week schedule) still work and land on the screens that replaced them (`HASH_ALIASES` in `src/screens.ts`).
+- **Links.** Every screen has a hash (`…/#every-buy`), and Back/Forward move between screens. Enter always starts on 01 The Throne; a hash in the URL at load is dropped. Old hashes (`#snapshots`, `#holders`, `#drops` from the airdrop version, `#schedule` and `#buybacks` from the two-week schedule, `#proof` from the old wallet screen) still work and land on the screens that replaced them (`HASH_ALIASES` in `src/screens.ts`).
 
 ## Tuning the look: `src/fx-config.ts`
 
@@ -190,16 +190,16 @@ buyback: {
   feePercent: 20,                          // % of feeSource used for buybacks
   cadence: 'automatically, every time someone buys',  // reads "Buybacks happen automatically, every time someone buys."
   method: 'burn',                          // 'burn' or 'lock': what happens to the bought $ROAR
-  buybackWallet: null,                     // the public wallet every buyback is made from
+  buybackWallet: null,                     // the wallet buybacks are made from (kept here, not shown on the site)
   burnAddress: '1nc1nerator11111111111111111111111111111111',  // Solana incinerator
-  explorerUrl: null,                       // explorer page for the buyback wallet
+  explorerUrl: null,                       // its explorer page (not shown either)
   burnExplorerUrl: 'https://solscan.io/account/1nc1nerator11111111111111111111111111111111',
   history: [],            // { date, round, spent: { amount, currency }, tokensBought, tokensBurned, txUrl } per tally
 },
 
 ```
 
-While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner, on screen 07 (the buyback wallet and burn address), 10, 11 (the meme link) and 12. Any buyback figure left `null` reads "TBA".
+While a value is `null` (or `'#'` for the links), its controls show greyed out with a "Coming soon" tag and do nothing. Fill a value in and they turn on: the CA pills copy to the clipboard and the buy/explorer/community buttons become real links. They live in the bottom-right corner and on screens 01, 10, 11 (the meme link) and 12. The buyback wallet and burn address are not shown anywhere on the site. Any buyback figure left `null` reads "TBA".
 
 **Totals are never typed in.** Buybacks run on every buy, so they aren't recorded one by one: each `history` entry is a tally of everything bought and burned since the previous one. Burned so far is the sum of `history[].tokensBurned`; circulating supply is `supply` minus that. They show on screens 10 and 12, labelled "as of" the last tally's date. Before launch (`contractAddress` is `null`) they read "None yet" and the full supply. After launch with no tally yet, both read "On the explorer" instead of a number that would already be out of date.
 
@@ -221,9 +221,8 @@ While `method` is `null` the copy says "burned or locked"; set it and every scre
 
 ## Keeping the promises
 
-Buybacks run automatically on every buy, so there's no buyback day to prepare for. The site still promises two things: buybacks follow the rules on screen 05, published in advance, and every buyback is an on-chain transaction from one public wallet. To keep them:
+Buybacks run automatically on every buy, so there's no buyback day to prepare for. The site still promises two things: buybacks follow the rules on screen 05, published in advance, and every buyback is an on-chain transaction. To keep them:
 
-- [ ] **Before trading opens.** Fill in `buyback.buybackWallet` and `buyback.explorerUrl`, so screen 07 shows the wallet every buyback comes from. Deploy, then check screens 04, 05 and 07.
 - [ ] **Changing a rule.** If `feeSource`, `feePercent`, `cadence` or `method` is changing, announce it and deploy the change to `src/config.ts` before it applies, never after.
 - [ ] **Updating the totals.** Whenever you want Burned so far to catch up (daily, weekly), add a tally to `buyback.history`: `{ date, round, spent: { amount, currency }, tokensBought, tokensBurned, txUrl }` for everything since the previous tally, with an explorer link. Total burned and circulating supply update from it on their own. Deploy, then check screens 10 and 12.
 

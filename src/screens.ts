@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { B, cadenceText, feeShareText, methodText, retired, sinkName, tokenFacts } from './buyback'
+import { B, cadenceText, feeShareText, methodText, retired, tokenFacts } from './buyback'
 import { MAX_QUESTION } from './ask'
 import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
@@ -81,13 +81,6 @@ const nextBuy = `
     <span class="nextbuy__note">No countdown. No waiting.</span>
   </div>`
 
-/** Screen 07: one public address with its explorer link (token.ts fills both slots from config). */
-const walletBox = (label: string, which: 'buyback' | 'burn') => `
-  <div class="cabox">
-    <span class="cabox__label">${esc(label)}</span>
-    <span class="slot" data-wallet="${which}" data-tag></span>
-  </div>
-  <div class="actions"><span class="slot" data-wallet-explorer="${which}"></span></div>`
 
 /**
  * Screen 09's live Q&A card (ask.ts fills it in): the current question and
@@ -140,6 +133,7 @@ const supplyCopy =
 
 /** Old #hashes, sent to the screen that took their place. */
 export const HASH_ALIASES: Record<string, string> = {
+  proof: 'lion',
   snapshots: 'every-buy',
   schedule: 'every-buy',
   holders: 'supply',
@@ -194,7 +188,7 @@ export const SCREENS: ScreenDef[] = [
         ],
         [`The lion buys ${T} back`, 'Automatically, on the open market, {{like anyone else}}.'],
         sinkStep,
-        ['Every buyback is on-chain', 'From one public wallet. {{Check it on the explorer.}}'],
+        ['Every buyback is on-chain', 'Automatic, on the record. {{Nobody decides when.}}'],
       ])}
       ${note('Buybacks follow published rules. Any change is announced before it applies.')}`,
   },
@@ -242,19 +236,22 @@ export const SCREENS: ScreenDef[] = [
       ${body(supplyCopy.body)}`,
   },
   {
-    id: 'proof',
-    name: 'Nothing hidden',
-    sub: 'One public wallet. Every buyback on-chain.',
+    id: 'lion',
+    name: 'Meet the lion',
+    sub: 'A lion in a suit. Mostly napping.',
     side: 'left',
     html: `
-      ${eyebrow('THE SUMMIT · PROOF')}
-      ${head('NOTHING', 'HIDDEN.')}
-      ${lede(`Every buyback is made from one public wallet, and every ${T} it buys goes to a public ${sinkName().toLowerCase()}. {{Every buyback is an on-chain transaction}}, so anyone can check.`)}`,
-    aside: announcement(
-      `The buyback wallet and the ${sinkName().toLowerCase()}. Every buyback is an on-chain transaction from this wallet, so anyone can check it on the explorer.`,
-      `${walletBox('Buyback wallet', 'buyback')}${walletBox(sinkName(), 'burn')}`,
-      `FUNDED BY · ${feeShareText()}`,
-    ),
+      ${eyebrow('THE SUMMIT · THE LION')}
+      ${head('MEET THE', 'LION.')}
+      ${lede('A lion in a suit, at the top of the rock. {{He doesn’t chase. He arrives.}}')}
+      ${body(`He naps eighteen hours a day. The other six are legendary: every time someone buys ${T}, he takes his share of ${fees} and buys ${T} back. ${B.method === 'lock' ? 'He locks it away' : B.method === 'burn' ? 'He burns it' : 'He takes it out of circulation'}, then goes back to his rock.`)}
+      ${facts([
+        { label: 'Suit', value: 'Charcoal, tailored' },
+        { label: 'Tie', value: 'Red, always' },
+        { label: 'Naps', value: '18 hours a day' },
+        { label: 'Day job', value: `Buying back ${T}` },
+      ])}
+      ${note('LONG LIVE THE LION.')}`,
   },
   {
     id: 'relax',
@@ -341,7 +338,7 @@ export const SCREENS: ScreenDef[] = [
       </div>
       <div class="safety" data-in role="note" aria-label="Safety notice">
         <span class="safety__label">Stay safe</span>
-        <p>We’ll never DM you, ask for your seed phrase, or ask you to send funds. Buybacks happen on-chain from our public wallet. Only trust links on this site.</p>
+        <p>We’ll never DM you, ask for your seed phrase, or ask you to send funds. Buybacks happen on-chain, on their own. Only trust links on this site.</p>
       </div>
       <p class="disclaimer-short" data-in>${esc(SHORT_DISCLAIMER)} <button class="disclaimer-short__more" type="button" data-disclaimer-open aria-haspopup="dialog">Read more</button></p>
       <div class="cabox" data-in>
