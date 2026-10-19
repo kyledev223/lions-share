@@ -75,9 +75,9 @@ export interface SiteConfig {
 export const config: SiteConfig = {
   name: 'Lion’s Share',
   ticker: '$ROAR',
-  contractAddress: '8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
-  buyUrl: 'https://pump.fun/coin/8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
-  explorerUrl: 'https://solscan.io/token/8oGUtiVXhxinbb4JjFqFMUyYoaHx5oCEfQx2xsFopump',
+  contractAddress: 'BRD6aDN4zVWmryWpmz6rWWCjELUudEBM3VsQUjnxpump',
+  buyUrl: 'https://pump.fun/coin/BRD6aDN4zVWmryWpmz6rWWCjELUudEBM3VsQUjnxpump',
+  explorerUrl: 'https://solscan.io/token/BRD6aDN4zVWmryWpmz6rWWCjELUudEBM3VsQUjnxpump',
   communityUrl: 'https://x.com/roarmemedev',
   followUrl: 'https://x.com/roarmemedev',
   supply: 1_000_000_000,
