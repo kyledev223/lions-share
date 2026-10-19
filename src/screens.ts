@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { B, cadenceText, feeShareText, feeSourceText, fmtDate, fmtNumber, methodText, nextBuybackText, retired, roundTokens, sinkName, tokenFacts } from './buyback'
+import { B, cadenceText, feeShareText, fmtDate, fmtNumber, methodText, nextBuybackAt, nextBuybackText, retired, roundTokens, sinkName, tokenFacts } from './buyback'
 import { MAX_QUESTION } from './ask'
 import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
@@ -74,12 +74,15 @@ const rules = (rows: { label: string; value: string }[]) =>
   `<dl class="rules" data-in>${rows.map((r) => `<div><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`).join('')}</dl>`
 
 /** Screen 04's card body: the next buyback and a countdown (buyback.ts keeps it ticking). */
-const countdown = () => `
+const countdown = () => {
+  const set = nextBuybackAt() !== null
+  return `
   <div class="countdown" data-countdown>
     <span class="countdown__label">Next buyback</span>
-    <span class="countdown__value">${esc(B.nextBuyback ? '—' : 'TBA')}</span>
-    ${B.nextBuyback ? `<span class="countdown__date">${esc(nextBuybackText())}</span>` : ''}
+    <span class="countdown__value">${esc(set ? '—' : 'TBA')}</span>
+    ${set ? `<span class="countdown__date">${esc(nextBuybackText())}</span>` : ''}
   </div>`
+}
 
 /** Screen 08: every buyback so far, newest first. */
 const ROUNDS_SHOWN = 6
@@ -175,7 +178,11 @@ export const SCREENS: ScreenDef[] = [
     html: `
       <p class="eyebrow hero__eyebrow" data-in><span class="slashes" aria-hidden="true">//////</span> THE THRONE ROOM · ${esc(T)} BUYBACKS</p>
       <h1 class="display hero__title" aria-label="${esc(`Hold ${T}. The lion buys back.`)}">${lines(`HOLD ${T}.`, 'THE LION', 'BUYS BACK.')}</h1>
-      ${lede(`A share of ${fees} is used to buy ${T} on the open market. {{${fate}}}`)}
+      ${lede(
+        B.feePercent === null
+          ? `A share of ${fees} is used to buy ${T} on the open market. {{${fate}}}`
+          : `{{${feeShareText()}}} buys ${T} on the open market${B.cadence ? `, ${cadenceText()}` : ''}. ${fate}`,
+      )}
       <div class="actions" data-in>
         <span class="slot" data-buy="primary"></span>
         <a class="btn btn--ghost" href="#how" data-goto="how">How it works <span aria-hidden="true">↓</span></a>
@@ -237,8 +244,7 @@ export const SCREENS: ScreenDef[] = [
       ${eyebrow('THE PRIDE · THE RULES')}
       ${head('THE', 'RULES.')}
       ${rules([
-        { label: 'Fee source', value: capFirst(feeSourceText()) },
-        { label: 'Share used for buybacks', value: B.feePercent === null ? 'TBA' : `${B.feePercent}%` },
+        { label: 'Share of fees for buybacks', value: B.feePercent === null ? 'TBA' : `${B.feePercent}%` },
         { label: 'Schedule', value: B.cadence ? capFirst(cadenceText()) : 'TBA' },
         { label: `Bought ${T} is`, value: methodText() },
       ])}
@@ -312,7 +318,7 @@ export const SCREENS: ScreenDef[] = [
     html: `
       ${eyebrow(`THE TOKEN · CHAIN ${(config.chain ?? 'TBA').toUpperCase()}`)}
       ${head('THE', 'TOKEN.')}
-      ${lede(`${T} is the meme token of the pride. {{A share of ${fees} buys it back.}}${config.buyUrl ? '' : ' Nothing to buy yet; these buttons wake up when there is.'}`)}
+      ${lede(`${T} is the meme token of the pride. {{${B.feePercent === null ? `A share of ${fees}` : capFirst(feeShareText())} buys it back.}}${config.buyUrl ? '' : ' Nothing to buy yet; these buttons wake up when there is.'}`)}
       ${facts([tokenFacts().supply, tokenFacts().burned, tokenFacts().circulating, tokenFacts().chain])}
       <div class="actions" data-in>
         <span class="slot" data-buy="gold"></span>

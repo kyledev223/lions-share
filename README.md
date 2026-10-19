@@ -2,7 +2,7 @@
 
 *Hold $ROAR. The lion buys back.*
 
-A twelve-screen, full-viewport site that explains the $ROAR buybacks: a share of the fees is used to buy $ROAR on the open market, and the bought $ROAR is burned (or locked), under rules published in advance. Every figure on the site (fee source and share, schedule, next buyback, burn or lock, the buyback wallet and burn address, past buybacks) comes from `src/config.ts`; total burned and circulating supply are worked out from it; anything not set yet reads "TBA". There are no made-up people, quotes or engagement counts, and no claims about price.
+A twelve-screen, full-viewport site that explains the $ROAR buybacks: every two weeks, 20% of creator trading fees is used to buy $ROAR on the open market, and the bought $ROAR is burned, under rules published in advance. Every figure on the site (fee source and share, schedule, next buyback, burn or lock, the buyback wallet and burn address, past buybacks) comes from `src/config.ts`; total burned and circulating supply are worked out from it; anything not set yet reads "TBA". There are no made-up people, quotes or engagement counts, and no claims about price.
 
 Every environment is built from glowing points: outlines of rooms, floors, props, charts, text and the emblem, mostly white and red with gold accents, under soft bloom, fine film grain and a little colour fringing toward the edges. The mascot is a lion in a suit, shown as a hologram, with a different animation on each screen. The site opens on a star field around a glass orb of points with the lion's head inside. Built with Vite, vanilla TypeScript, Three.js and GSAP. The music is generated in the browser and the fonts are bundled.
 
@@ -184,17 +184,18 @@ explorerUrl: null,       // e.g. 'https://…/token/0xAbC…123'
 communityUrl: '#',       // "Join the pride" / "Bring a meme to the den"
 followUrl: '#',          // "Follow the roar" and the X button in the corner
 supply: 1_000_000_000,   // null = TBA
-chain: null,             // e.g. 'Solana'
+chain: 'Solana',
 buyback: {
-  feeSource: null,        // e.g. 'creator trading fees'
-  feePercent: null,       // e.g. 50 (% of feeSource used for buybacks)
-  cadence: null,          // e.g. 'every Monday' (reads "Buybacks happen every Monday.")
-  nextBuyback: null,      // e.g. '2026-11-01T16:00:00Z' (drives the screen 04 countdown)
-  method: null,           // 'burn' or 'lock': what happens to the bought $ROAR
-  buybackWallet: null,    // the public wallet every buyback is made from
-  burnAddress: null,      // where bought $ROAR goes (the lock, if method is 'lock')
-  explorerUrl: null,      // explorer page for the buyback wallet
-  burnExplorerUrl: null,  // explorer page for the burn address
+  feeSource: 'creator trading fees',
+  feePercent: 20,                          // % of feeSource used for buybacks
+  cadence: 'every two weeks',              // reads "Buybacks happen every two weeks."
+  nextBuyback: '2026-11-02T16:00:00Z',     // the first buyback (drives the screen 04 countdown)
+  intervalDays: 14,                        // once nextBuyback passes, the site rolls it forward by this
+  method: 'burn',                          // 'burn' or 'lock': what happens to the bought $ROAR
+  buybackWallet: null,                     // the public wallet every buyback is made from
+  burnAddress: '1nc1nerator11111111111111111111111111111111',  // Solana incinerator
+  explorerUrl: null,                       // explorer page for the buyback wallet
+  burnExplorerUrl: 'https://solscan.io/account/1nc1nerator11111111111111111111111111111111',
   history: [],            // { date, round, spent: { amount, currency }, tokensBought, tokensBurned, txUrl } per buyback
 },
 
@@ -215,6 +216,7 @@ While `method` is `null` the copy says "burned or locked"; set it and every scre
 | `feePercent` | percent of `feeSource` | `50` | 50% of creator trading fees |
 | `cadence` | a phrase completing "Buybacks happen…" | `'every Monday'` | Buybacks happen every Monday. |
 | `nextBuyback` | ISO 8601 date-time, shown in UTC | `'2026-11-01T16:00:00Z'` | 1 NOV 2026 · 16:00 UTC, plus a live countdown |
+| `intervalDays` | days between buybacks | `14` | the date and countdown move on 14 days each time one passes |
 | `method` | `'burn'` or `'lock'` | `'burn'` | Bought $ROAR is: Burned |
 | `history[].date` | ISO date | `'2026-11-01'` | 1 NOV 2026 |
 | `history[].spent` | amount and currency spent | `{ amount: 12.5, currency: 'SOL' }` | 12.5 SOL spent |
@@ -230,7 +232,7 @@ The site promises three things, so every buyback has to keep them: buybacks foll
 - [ ] **Execute per the rules.** Buy $ROAR on the open market from the buyback wallet, at the scheduled time, spending what the rules say.
 - [ ] **Burn or lock.** Send the bought $ROAR to the burn address (or the lock, if `method` is `'lock'`), `buyback.burnAddress`.
 - [ ] **Record it.** Add `{ date, round, spent: { amount, currency }, tokensBought, tokensBurned, txUrl }` to `buyback.history`, with the explorer link to the buy and burn transactions. Total burned and circulating supply update from it on their own.
-- [ ] **Set the next date.** Set `nextBuyback` to the next one, or back to `null` if none is set yet. Deploy, then check screens 04, 08 and 10.
+- [ ] **Check the next date.** With `intervalDays` set, the site moves on to the next buyback by itself. Only touch `nextBuyback` if the schedule changes (announce it first). Deploy, then check screens 04, 08 and 10.
 
 ## Test on a phone
 

@@ -36,6 +36,12 @@ export interface BuybackConfig {
   cadence: string | null
   /** Unit: an ISO 8601 date-time, shown in UTC, e.g. "2026-11-01T16:00:00Z". `null` = "Next buyback: TBA". */
   nextBuyback: string | null
+  /**
+   * Unit: days between buybacks, e.g. 14. Once `nextBuyback` has passed, the
+   * site rolls it forward by this many days, so the date and countdown never
+   * go stale. `null` = no roll-forward.
+   */
+  intervalDays: number | null
   /** What happens to the bought $ROAR: sent to the burn address, or locked. `null` = TBA. */
   method: 'burn' | 'lock' | null
   /** The public wallet every buyback is made from. `null` = disabled placeholder. */
@@ -78,17 +84,18 @@ export const config: SiteConfig = {
   communityUrl: '#',
   followUrl: '#',
   supply: 1_000_000_000,
-  chain: null,
+  chain: 'Solana',
   buyback: {
-    feeSource: null,
-    feePercent: null,
-    cadence: null,
-    nextBuyback: null,
-    method: null,
+    feeSource: 'creator trading fees',
+    feePercent: 20,
+    cadence: 'every two weeks',
+    nextBuyback: '2026-11-02T16:00:00Z',
+    intervalDays: 14,
+    method: 'burn',
     buybackWallet: null,
-    burnAddress: null,
+    burnAddress: '1nc1nerator11111111111111111111111111111111',
     explorerUrl: null,
-    burnExplorerUrl: null,
+    burnExplorerUrl: 'https://solscan.io/account/1nc1nerator11111111111111111111111111111111',
     history: [],
   },
 }

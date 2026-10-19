@@ -41,12 +41,29 @@ export const circulatingText = () => {
   return c === null ? TBA : fmtNumber(c)
 }
 
-export const feeSourceText = () => B.feeSource ?? TBA
 /** "50% of creator trading fees". */
 export const feeShareText = () =>
   B.feePercent === null ? TBA : `${B.feePercent}% of ${B.feeSource ?? 'fees (source TBA)'}`
 export const cadenceText = () => B.cadence ?? TBA
-export const nextBuybackText = () => (B.nextBuyback ? fmtDateTime(B.nextBuyback) : TBA)
+
+/**
+ * The next buyback still to come, in ms: `nextBuyback`, rolled forward by
+ * `intervalDays` until it's in the future. `null` while no date is set, or
+ * once a date without an interval has passed.
+ */
+export function nextBuybackAt(now = Date.now()) {
+  if (!B.nextBuyback) return null
+  const first = new Date(B.nextBuyback).getTime()
+  if (Number.isNaN(first)) return null
+  if (first > now) return first
+  if (!B.intervalDays) return null
+  const step = B.intervalDays * 86_400_000
+  return first + (Math.floor((now - first) / step) + 1) * step
+}
+export const nextBuybackText = () => {
+  const at = nextBuybackAt()
+  return at === null ? TBA : fmtDateTime(new Date(at).toISOString())
+}
 /** What happens to bought $ROAR, as a rule: "Burned", "Locked" or TBA. */
 export const methodText = () => (B.method === 'burn' ? 'Burned' : B.method === 'lock' ? 'Locked' : TBA)
 /** The same as a past participle for running copy: "burned", "locked", or "burned or locked" while TBA. */
@@ -81,17 +98,20 @@ function remaining(target: number) {
 }
 
 /**
- * Screen 04's countdown to `nextBuyback`. With no date set it stays on
- * "TBA"; once the moment passes it says the buyback is due.
+ * Screen 04's countdown to the next buyback. With no date set it stays on
+ * "TBA"; when one passes it moves on to the next (see `nextBuybackAt`), or
+ * says the buyback is due if there's no interval to roll forward by.
  */
 export function initCountdown() {
-  const value = document.querySelector<HTMLElement>('[data-countdown] .countdown__value')
-  if (!value || !B.nextBuyback) return
-  const target = new Date(B.nextBuyback).getTime()
-  if (Number.isNaN(target)) return
+  const card = document.querySelector<HTMLElement>('[data-countdown]')
+  const value = card?.querySelector<HTMLElement>('.countdown__value')
+  const date = card?.querySelector<HTMLElement>('.countdown__date')
+  if (!value || nextBuybackAt() === null) return
   const tick = () => {
-    const left = remaining(target)
-    value.textContent = left ?? 'Due · next date TBA'
+    const target = nextBuybackAt()
+    const left = target === null ? null : remaining(target)
+    value.textContent = left ?? 'Due now'
+    if (date) date.textContent = nextBuybackText()
     if (!left) window.clearInterval(timer)
   }
   const timer = window.setInterval(tick, 1000)

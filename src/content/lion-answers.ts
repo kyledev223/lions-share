@@ -1,4 +1,4 @@
-import { B, cadenceText, feeShareText, nextBuybackText, retired, shorten, sinkName } from '../buyback'
+import { B, cadenceText, feeShareText, nextBuybackAt, nextBuybackText, retired, shorten, sinkName } from '../buyback'
 import { config } from '../config'
 
 /**
@@ -18,7 +18,7 @@ const funding =
     ? `A share of ${B.feeSource ? `the ${B.feeSource}` : 'the fees'} (the exact share is TBA)`
     : `${feeShareText().charAt(0).toUpperCase()}${feeShareText().slice(1)}`
 const schedule = B.cadence ? `Buybacks happen ${cadenceText()}.` : 'The buyback schedule is TBA.'
-const next = B.nextBuyback ? `Next one: ${nextBuybackText()}.` : 'Next buyback: TBA. The countdown on this site wakes up when it’s set.'
+const next = nextBuybackAt() !== null ? `Next one: ${nextBuybackText()}.` : 'Next buyback: TBA. The countdown on this site wakes up when it’s set.'
 const sink = sinkName().toLowerCase()
 const burnWhat = 'Burned means sent to an address nobody controls. Those tokens are gone permanently, so the circulating supply shrinks.'
 const lockWhat = 'Locked means held in a public lock, out of circulation, while the lock lasts.'
@@ -91,7 +91,7 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
       'Every buyback transaction is published, with the date, what was spent and what was bought. Check them on the explorer yourself.',
       B.buybackWallet
         ? `Every buyback is made from one public wallet, ${shorten(B.buybackWallet)}. Watch it on the explorer.`
-        : 'Every buyback is made from one public wallet. Its address is TBA; it goes up on this site’s Nothing Hidden screen.',
+        : 'Every buyback is made from one public wallet. Its address goes up on this site’s Nothing Hidden screen before the first buyback.',
       B.burnAddress
         ? `Bought ${T} goes to the ${sink}, ${shorten(B.burnAddress)}. It’s on the Nothing Hidden screen with an explorer link.`
         : `The ${sink} is TBA. It goes up on the Nothing Hidden screen, with an explorer link.`,
