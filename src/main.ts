@@ -4,7 +4,6 @@ import '@fontsource/jetbrains-mono/500.css'
 import './style.css'
 
 import gsap from 'gsap'
-import { initCountdown } from './buyback'
 import { createAsk } from './ask'
 import { initSoundControl, music } from './audio'
 import { runBoot } from './boot'
@@ -37,7 +36,6 @@ void initLite()
 
 const views = renderScreens(document.getElementById('screens')!, reduced)
 hydrateToken()
-initCountdown()
 initSoundControl()
 // Screen 09's question box and live Q&A card; the stage sends the bubbles.
 const ask = createAsk(views.find((v) => v.def.id === 'ask')!.el, reduced)

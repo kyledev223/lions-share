@@ -27,7 +27,7 @@ const ALT: Record<string, string> = {
 
 const PLACEHOLDERS: PlaceholderSpec[] = [
   { top: ['POV: THE LION', 'WENT SHOPPING'], bottom: 'THEN BURNED THE BAG', motif: 'coin', scheme: 0 },
-  { top: ['ME WATCHING', 'THE COUNTDOWN'], bottom: 'LOW IN THE LONG GRASS', motif: 'horizon', scheme: 1 },
+  { top: ['ME WAITING FOR', 'A BUYBACK'], bottom: 'IT ALREADY HAPPENED', motif: 'horizon', scheme: 1 },
   { top: ['SHARE? I TAKE', 'THE BIG ONE'], bottom: 'IT IS LITERALLY THE NAME', motif: 'head', scheme: 2 },
   { top: ['HYENAS LAUGH.', 'LIONS EAT.'], bottom: 'PICK YOUR SIDE OF THE FIRE', motif: 'stack', scheme: 3 },
   { top: ['NO FORMS.', 'NO SIGNING.'], bottom: 'THE LION HANDLES IT', motif: 'eye', scheme: 0 },

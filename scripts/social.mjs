@@ -101,7 +101,7 @@ const png = (svg) => new Resvg(svg, { font: { loadSystemFonts: false } }).render
 
   const headline = 'THE LION BUYS BACK.'
   const hSize = Math.min(150, (980 - X) / (width(anton, headline, 100) / 100))
-  const sub = '20% of creator fees buys $ROAR back every two weeks. Then it burns.'
+  const sub = 'Every buy, 20% of creator fees buys $ROAR back. Then it burns.'
 
   const ex = 1215
   const ey = 245

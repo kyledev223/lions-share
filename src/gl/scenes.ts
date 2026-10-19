@@ -690,7 +690,7 @@ function theHunt(): Stage {
   floorGlow(scene, V(0, 0, 0), 0.8, 1.1)
   motes(scene, 403, V(-8, 0, -8), V(8, 5, 3), 1600, goldMix)
   return {
-    id: 'schedule',
+    id: 'every-buy',
     transition: { claw: 'light', wind: [0.6, 0, 0], swing: -10 }, // streaming out behind his stride
     scene,
     camera: { pos: V(-0.9, 1.2, 4.6), target: V(-0.9, 1.05, 0), fov: 38 },

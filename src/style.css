@@ -944,8 +944,8 @@ html.is-jacked .screen.is-active {
   color: var(--ink-dim);
 }
 
-/* ---- 04: the countdown inside the announcement ---- */
-.countdown {
+/* ---- 04: "next buyback: the next buy" inside the announcement ---- */
+.nextbuy {
   display: grid;
   gap: 0.375rem;
   padding: 0.75rem 0.875rem;
@@ -953,23 +953,22 @@ html.is-jacked .screen.is-active {
   border-radius: 0.75rem;
   background: rgba(30, 22, 6, 0.4);
 }
-.countdown__label,
-.countdown__date {
+.nextbuy__label,
+.nextbuy__note {
   font: 500 0.64rem/1 var(--f-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--gold-hi);
 }
-.countdown__date {
+.nextbuy__note {
   color: var(--ink-faint);
 }
-.countdown__value {
+.nextbuy__value {
   font-family: var(--f-display);
   font-weight: 900;
   font-stretch: 112%;
   font-size: 1.9rem;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
   text-transform: uppercase;
 }
 
@@ -1486,7 +1485,7 @@ html.is-dragging .cursor__ring::before {
     display: none;
   }
   /* Long screens lose their lede on phones; the card and buttons carry them. */
-  .screen--schedule .lede,
+  .screen--every-buy .lede,
   .screen--proof .lede,
   .screen--join .lede {
     display: none;

@@ -1,4 +1,4 @@
-import { B, cadenceText, feeShareText, nextBuybackAt, nextBuybackText, retired, shorten, sinkName } from '../buyback'
+import { B, cadenceText, feeShareText, retired, shorten, sinkName } from '../buyback'
 import { config } from '../config'
 
 /**
@@ -17,8 +17,7 @@ const funding =
   B.feePercent === null
     ? `A share of ${B.feeSource ? `the ${B.feeSource}` : 'the fees'} (the exact share is TBA)`
     : `${feeShareText().charAt(0).toUpperCase()}${feeShareText().slice(1)}`
-const schedule = B.cadence ? `Buybacks happen ${cadenceText()}.` : 'The buyback schedule is TBA.'
-const next = nextBuybackAt() !== null ? `Next one: ${nextBuybackText()}.` : 'Next buyback: TBA. The countdown on this site wakes up when it’s set.'
+const schedule = B.cadence ? `Buybacks happen ${cadenceText()}.` : 'When buybacks happen is TBA.'
 const sink = sinkName().toLowerCase()
 const burnWhat = 'Burned means sent to an address nobody controls. Those tokens are gone permanently, so the circulating supply shrinks.'
 const lockWhat = 'Locked means held in a public lock, out of circulation, while the lock lasts.'
@@ -27,7 +26,7 @@ const sinkWhat = B.method === 'lock' ? lockWhat : B.method === 'burn' ? burnWhat
 /** The general pool: picked at random, no repeats until every one has been used. */
 const GENERAL = [
   'Ask me about buybacks, burns or the rules. Everything else gets a proverb.',
-  `Fees in, ${T} bought, ${T} ${retired()}. That’s the whole hunt.`,
+  `Someone buys, I buy back, ${T} ${retired()}. That’s the whole hunt.`,
   'A lion takes the biggest slice. A good one puts it back.',
   'Patience is just hunting with better posture.',
   'I’ve never been late. Everyone else has been early.',
@@ -88,10 +87,10 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
   {
     match: /\b(verif\w*|proof|prove|check\w*|trust\w*|transparen\w*|explorer|tx|txs|transactions?|wallets?|burn address|lock address|on ?chain|audit\w*|publish\w*|history|record)\b/,
     answers: [
-      'Every buyback transaction is published, with the date, what was spent and what was bought. Check them on the explorer yourself.',
+      'Every buyback is an on-chain transaction from one public wallet: what was spent, what was bought, where it went. Check them on the explorer yourself.',
       B.buybackWallet
         ? `Every buyback is made from one public wallet, ${shorten(B.buybackWallet)}. Watch it on the explorer.`
-        : 'Every buyback is made from one public wallet. Its address goes up on this site’s Nothing Hidden screen before the first buyback.',
+        : 'Every buyback is made from one public wallet. Its address goes up on this site’s Nothing Hidden screen before trading opens.',
       B.burnAddress
         ? `Bought ${T} goes to the ${sink}, ${shorten(B.burnAddress)}. It’s on the Nothing Hidden screen with an explorer link.`
         : `The ${sink} is TBA. It goes up on the Nothing Hidden screen, with an explorer link.`,
@@ -105,8 +104,12 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
     ],
   },
   {
-    match: /\b(when|schedule\w*|next|how often|cadence|date|countdown|monthly|weekly|daily|time)\b/,
-    answers: [`${schedule} ${next}`, `Buybacks follow fixed, pre-announced rules. ${schedule}`],
+    match: /\b(when|schedule\w*|next|how often|cadence|date|countdown|monthly|weekly|daily|time|automatic\w*|auto)\b/,
+    answers: [
+      `${schedule} No schedule, no countdown.`,
+      'The next buyback? The next buy. I don’t wait for a calendar.',
+      `Every time someone buys ${T}, I buy some back. Same share, same rule, every time.`,
+    ],
   },
   {
     match: /\b(rules?|change\w*|stop\w*|end|forever|promise\w*|who decides)\b/,
@@ -119,7 +122,7 @@ const TOPICS: { match: RegExp; answers: string[] }[] = [
     // "buyback" before "buy", so it isn't read as a question about buying.
     match: /\b(buy ?backs?|bought|how (does|do) (it|this|they) work|explain|what is this)\b/,
     answers: [
-      `A buyback: ${funding.charAt(0).toLowerCase()}${funding.slice(1)} is used to buy ${T} on the open market. Then it’s ${retired()}, and every one is published.`,
+      `A buyback: every time someone buys, ${funding.charAt(0).toLowerCase()}${funding.slice(1)} is used to buy ${T} on the open market. Then it’s ${retired()}, all on-chain.`,
       `The lion takes his share of the fees and puts it back into the pride: ${T} bought on the open market, then ${retired()}.`,
     ],
   },

@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { B, cadenceText, feeShareText, methodText, nextBuybackAt, nextBuybackText, retired, sinkName, tokenFacts } from './buyback'
+import { B, cadenceText, feeShareText, methodText, retired, sinkName, tokenFacts } from './buyback'
 import { MAX_QUESTION } from './ask'
 import { config, DISCLAIMER, SHORT_DISCLAIMER } from './config'
 import { scramble } from './scramble'
@@ -73,16 +73,13 @@ const steps = (items: [string, string][]) => `
 const rules = (rows: { label: string; value: string }[]) =>
   `<dl class="rules" data-in>${rows.map((r) => `<div><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`).join('')}</dl>`
 
-/** Screen 04's card body: the next buyback and a countdown (buyback.ts keeps it ticking). */
-const countdown = () => {
-  const set = nextBuybackAt() !== null
-  return `
-  <div class="countdown" data-countdown>
-    <span class="countdown__label">Next buyback</span>
-    <span class="countdown__value">${esc(set ? '—' : 'TBA')}</span>
-    ${set ? `<span class="countdown__date">${esc(nextBuybackText())}</span>` : ''}
+/** Screen 04's card body: where a countdown would go, if there were anything to wait for. */
+const nextBuy = `
+  <div class="nextbuy">
+    <span class="nextbuy__label">Next buyback</span>
+    <span class="nextbuy__value">The next buy</span>
+    <span class="nextbuy__note">No countdown. No waiting.</span>
   </div>`
-}
 
 /** Screen 07: one public address with its explorer link (token.ts fills both slots from config). */
 const walletBox = (label: string, which: 'buyback' | 'burn') => `
@@ -108,7 +105,7 @@ const officeHours = () => `
       <p class="qa__q" hidden></p>
       <p class="qa__who">PINNED</p>
       <p class="qa__typing" hidden>Lion is typing<span class="qa__dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
-      <p class="post__text qa__a">Office hours are open. Ask me how the buybacks work: the fees, the schedule, the burn, where to check. <mark>Price questions get a roar, not an answer.</mark></p>
+      <p class="post__text qa__a">Office hours are open. Ask me how the buybacks work: the fees, when they happen, the burn, where to check. <mark>Price questions get a roar, not an answer.</mark></p>
       <footer><time>OFFICE HOURS · BUYBACK FAQ</time></footer>
     </article>
     <p class="visually-hidden qa__live-text" aria-live="polite"></p>
@@ -141,9 +138,10 @@ const supplyCopy =
         body: 'A burned token can never be spent, sold or brought back. With fewer tokens left in circulation, each remaining one is a larger share of the total. That’s arithmetic, not a promise about price.',
       }
 
-/** Old #hashes from before the buybacks, sent to the screen that took their place. */
+/** Old #hashes, sent to the screen that took their place. */
 export const HASH_ALIASES: Record<string, string> = {
-  snapshots: 'schedule',
+  snapshots: 'every-buy',
+  schedule: 'every-buy',
   holders: 'supply',
   drops: 'relax',
   buybacks: 'relax',
@@ -191,28 +189,30 @@ export const SCREENS: ScreenDef[] = [
       ${head('HOW BUYBACKS', 'WORK.')}
       ${steps([
         [
-          'Fees come in',
+          `Someone buys ${T}`,
           B.feePercent === null ? `A share of ${fees} (TBA) goes to his wallet.` : `${capFirst(feeShareText())} goes to his wallet.`,
         ],
-        [`The lion’s wallet buys ${T}`, 'On the open market, {{like anyone else}}.'],
+        [`The lion buys ${T} back`, 'Automatically, on the open market, {{like anyone else}}.'],
         sinkStep,
-        ['Every buyback is published', 'With its transaction. {{Check it on the explorer.}}'],
+        ['Every buyback is on-chain', 'From one public wallet. {{Check it on the explorer.}}'],
       ])}
       ${note('Buybacks follow published rules. Any change is announced before it applies.')}`,
   },
   {
-    id: 'schedule',
-    name: 'On schedule',
-    sub: 'Fixed rules, announced in advance.',
+    id: 'every-buy',
+    name: 'Every buy',
+    sub: 'No schedule. No waiting.',
     side: 'left',
     html: `
-      ${eyebrow('THE HUNT · SCHEDULE')}
-      ${head('ON SCHEDULE.')}
-      ${lede('No whims, no surprise buys. {{Buybacks follow fixed rules, announced in advance.}}')}
+      ${eyebrow('THE HUNT · EVERY BUY')}
+      ${head('EVERY', 'BUY.')}
+      ${lede(`No schedule, no countdown, nobody deciding when. {{Every time someone buys ${T}, the lion buys back.}}`)}
       ${announcement(
-        `Every buyback follows the same published rules: the same share of ${fees}, on the same schedule. ${B.cadence ? `Buybacks happen ${cadenceText()}.` : 'Buyback schedule: TBA.'}`,
-        countdown(),
-        'BUYBACK SCHEDULE',
+        B.feePercent === null
+          ? `One published rule, no improvising: a share of ${fees} (TBA) buys ${T} back${B.cadence ? `, ${cadenceText()}` : ''}.`
+          : `One published rule, no improvising: {{${feeShareText()} buys ${T} back}}${B.cadence ? `, ${cadenceText()}` : ''}.`,
+        nextBuy,
+        'AUTOMATIC BUYBACKS',
       )}`,
   },
   {
@@ -225,7 +225,7 @@ export const SCREENS: ScreenDef[] = [
       ${head('THE', 'RULES.')}
       ${rules([
         { label: 'Share of fees for buybacks', value: B.feePercent === null ? 'TBA' : `${B.feePercent}%` },
-        { label: 'Schedule', value: B.cadence ? capFirst(cadenceText()) : 'TBA' },
+        { label: 'When', value: B.cadence ? capFirst(cadenceText()) : 'TBA' },
         { label: `Bought ${T} is`, value: methodText() },
       ])}
       ${note('These rules are published in advance. Any change is announced here before it applies.')}`,
@@ -244,14 +244,14 @@ export const SCREENS: ScreenDef[] = [
   {
     id: 'proof',
     name: 'Nothing hidden',
-    sub: 'One public wallet. Every buyback published.',
+    sub: 'One public wallet. Every buyback on-chain.',
     side: 'left',
     html: `
       ${eyebrow('THE SUMMIT · PROOF')}
       ${head('NOTHING', 'HIDDEN.')}
-      ${lede(`Every buyback is made from one public wallet, and every ${T} it buys goes to a public ${sinkName().toLowerCase()}. {{Every buyback transaction is published}}, so anyone can check.`)}`,
+      ${lede(`Every buyback is made from one public wallet, and every ${T} it buys goes to a public ${sinkName().toLowerCase()}. {{Every buyback is an on-chain transaction}}, so anyone can check.`)}`,
     aside: announcement(
-      `The buyback wallet and the ${sinkName().toLowerCase()}. Every buyback transaction is published and can be checked on the explorer.`,
+      `The buyback wallet and the ${sinkName().toLowerCase()}. Every buyback is an on-chain transaction from this wallet, so anyone can check it on the explorer.`,
       `${walletBox('Buyback wallet', 'buyback')}${walletBox(sinkName(), 'burn')}`,
       `FUNDED BY · ${feeShareText()}`,
     ),
@@ -281,7 +281,7 @@ export const SCREENS: ScreenDef[] = [
     html: `
       ${eyebrow('OFFICE HOURS · BUYBACK FAQ')}
       ${head('ASK THE', 'LION.')}
-      ${lede('He’s up on the ledge above the water. Drop a question in and watch it float up to him. {{Ask about the buybacks}}: the fees, the schedule, the burn, where to check.')}
+      ${lede('He’s up on the ledge above the water. Drop a question in and watch it float up to him. {{Ask about the buybacks}}: the fees, when they happen, the burn, where to check.')}
       <form class="ask" data-in autocomplete="off" novalidate>
         <label class="visually-hidden" for="askInput">Your question for the lion</label>
         <span class="ask__field">

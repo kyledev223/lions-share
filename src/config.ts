@@ -13,17 +13,17 @@
  * `buyback.history` (see buyback.ts), never typed in.
  */
 export interface BuybackRound {
-  /** ISO date the buyback was made, e.g. "2026-11-01". */
+  /** ISO date the tally runs up to, e.g. "2026-11-01". */
   date: string
-  /** Round number, 1 for the first buyback. */
+  /** Tally number, 1 for the first. */
   round: number
-  /** What was spent on the buyback, e.g. `{ amount: 12.5, currency: 'SOL' }`. */
+  /** What the buybacks in this tally spent, e.g. `{ amount: 12.5, currency: 'SOL' }`. */
   spent: { amount: number; currency: string }
-  /** Unit: whole $ROAR tokens bought on the open market in that round. */
+  /** Unit: whole $ROAR tokens bought on the open market since the previous tally. */
   tokensBought: number
-  /** Unit: whole $ROAR tokens burned in that round (0 if they were locked instead). */
+  /** Unit: whole $ROAR tokens burned since the previous tally (0 if they were locked instead). */
   tokensBurned: number
-  /** Explorer link to the round's transactions. `null` = shown greyed out. */
+  /** Explorer link for the period, e.g. the buyback wallet's transactions. `null` = shown greyed out. */
   txUrl: string | null
 }
 
@@ -32,16 +32,8 @@ export interface BuybackConfig {
   feeSource: string | null
   /** Unit: percent of `feeSource` used for buybacks (50 means 50%). `null` = TBA. */
   feePercent: number | null
-  /** Unit: a phrase that completes "Buybacks happen…", e.g. "every Monday" or "weekly". `null` = TBA. */
+  /** Unit: a phrase that completes "Buybacks happen…", e.g. "automatically, every time someone buys". `null` = TBA. */
   cadence: string | null
-  /** Unit: an ISO 8601 date-time, shown in UTC, e.g. "2026-11-01T16:00:00Z". `null` = "Next buyback: TBA". */
-  nextBuyback: string | null
-  /**
-   * Unit: days between buybacks, e.g. 14. Once `nextBuyback` has passed, the
-   * site rolls it forward by this many days, so the date and countdown never
-   * go stale. `null` = no roll-forward.
-   */
-  intervalDays: number | null
   /** What happens to the bought $ROAR: sent to the burn address, or locked. `null` = TBA. */
   method: 'burn' | 'lock' | null
   /** The public wallet every buyback is made from. `null` = disabled placeholder. */
@@ -52,7 +44,12 @@ export interface BuybackConfig {
   explorerUrl: string | null
   /** Explorer page for the burn address. `null` = disabled placeholder. */
   burnExplorerUrl: string | null
-  /** Every buyback made so far, oldest first. Empty = "The first buyback is coming." */
+  /**
+   * Buybacks run on every buy, so they aren't listed one by one: each entry is
+   * a tally of everything bought and burned since the previous entry, oldest
+   * first. "Burned so far" and "Circulating" are summed from it and read "as of"
+   * the last tally's date. Empty = "None yet" before launch, the explorer after.
+   */
   history: BuybackRound[]
 }
 
@@ -88,9 +85,7 @@ export const config: SiteConfig = {
   buyback: {
     feeSource: 'creator trading fees',
     feePercent: 20,
-    cadence: 'every two weeks',
-    nextBuyback: '2026-11-02T16:00:00Z',
-    intervalDays: 14,
+    cadence: 'automatically, every time someone buys',
     method: 'burn',
     buybackWallet: null,
     burnAddress: '1nc1nerator11111111111111111111111111111111',
